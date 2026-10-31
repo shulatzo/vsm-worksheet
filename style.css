@@ -37,11 +37,11 @@ body { background:var(--bg); color:var(--uiInk); font-family:"Segoe UI", system-
 .sel { display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); }
 select, input[type=text], textarea { font:inherit; color:var(--uiInk); background:var(--ui); border:1px solid var(--uiLine); border-radius:6px; padding:6px 8px; }
 select.wide { width:100%; }
-.bar .only-narrow { display:none; }
 
 /* ——— Yerleşim ——— */
 .layout { display:flex; align-items:flex-start; gap:16px; padding:16px; }
 .side { width:290px; flex:none; background:var(--ui); border:1px solid var(--uiLine); border-radius:12px; padding:14px; position:sticky; top:64px; max-height:calc(100vh - 80px); overflow:auto; }
+.side.hidden { display:none; }
 .side h2 { margin:14px 0 8px; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
 .side section:first-child h2 { margin-top:0; }
 .drop { border:2px dashed var(--uiLine); border-radius:10px; padding:16px 10px; text-align:center; color:var(--muted); line-height:1.4; }
@@ -185,7 +185,6 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   .layout { flex-direction:column; padding:10px; }
   .side { width:100%; position:static; max-height:none; display:none; }
   .side.open { display:block; }
-  .bar .only-narrow { display:inline-flex; }
   .paper { padding:14px; }
   .cols { grid-template-columns:1fr; }
   .match-head .side-t { font-size:22px; }

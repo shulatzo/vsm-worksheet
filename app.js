@@ -661,7 +661,16 @@ $('#fileIn').addEventListener('change', e => { addFiles([...e.target.files]); e.
 ['dragenter', 'dragover'].forEach(t => window.addEventListener(t, e => { e.preventDefault(); $('#drop').classList.add('over'); }));
 ['dragleave', 'drop'].forEach(t => window.addEventListener(t, e => { if (t === 'dragleave' && e.relatedTarget) return; $('#drop').classList.remove('over'); }));
 window.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]); });
-$('#btnSide').addEventListener('click', () => $('#side').classList.toggle('open'));
+// Geniş ekranda panel varsayılan açık, dar ekranda kapalı. Düğme ikisinde de göster/gizler.
+{
+  const side = $('#side'); const narrow = matchMedia('(max-width: 860px)');
+  try { if (localStorage.getItem('vsm-side-hidden') === '1') side.classList.add('hidden'); } catch {}
+  $('#btnSide').addEventListener('click', () => {
+    if (narrow.matches) { side.classList.toggle('open'); return; }
+    const h = side.classList.toggle('hidden');
+    try { localStorage.setItem('vsm-side-hidden', h ? '1' : '0'); } catch {}
+  });
+}
 
 /* ───────── tema, yazdırma, yedekleme ───────── */
 function applyTheme() { html.dataset.theme = store.theme; $('#printTheme').value = store.printTheme; }
