@@ -113,11 +113,21 @@ export function summarize(list) {
 
 export const top = (obj, n = 3) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => [+k || k, v]);
 
-function guessRole(sz, isSetter) {
+function guessRole(sz, isSetter, tg = {}) {
   if (isSetter) return 'PASÖR';
+  // Önce hücum kodunun hedef oyuncusuna bakılır (F = 4. bölge, C = orta, B = 2. bölge, S = pasör).
+  // Orta oyuncunun hızlı vuruşu 2. bölgeden başlasa da (örn. CF, One Leg) orta oyuncudur.
+  const t = Object.entries(tg).filter(([k]) => 'FCBS'.includes(k)).sort((a, b) => b[1] - a[1])[0];
+  if (t) return { F: 'SMAÇÖR · OH', C: 'ORTA · MB', B: 'ÇAPRAZ · OPP', S: 'PASÖR' }[t[0]];
   const main = top(Object.fromEntries(Object.entries(sz).filter(([z]) => z !== '8')), 1)[0];
   if (!main) return top(sz, 1)[0] && top(sz, 1)[0][0] === 8 ? 'ARKA SIRA' : '';
   return { 4: 'SMAÇÖR · OH', 2: 'ÇAPRAZ · OPP', 3: 'ORTA · MB' }[main[0]] || '';
+}
+
+function roleTargets(list, combos) {
+  const tg = {};
+  list.forEach(p => { const t = p.comb && combos[p.comb] && combos[p.comb].target; if (t) tg[t] = (tg[t] || 0) + 1; });
+  return tg;
 }
 
 // Bir takım kodu için tüm maçlardan model kurar.
@@ -156,7 +166,7 @@ export function buildModel(matches, code) {
       hit: comboNames[c] && comboNames[c].hit, list: l, s: summarize(l),
     })).sort((a, b) => b.s.n - a.s.n);
     const r = roster[no] || { no, last: '', first: '' };
-    return { no, last: r.last, first: r.first, list, s: total, combos, role: guessRole(total.sz, setters.has(no) && setterCount[no] > 20), isLibero: libs.has(no) };
+    return { no, last: r.last, first: r.first, list, s: total, combos, role: guessRole(total.sz, setters.has(no) && setterCount[no] > 20, roleTargets(list, comboNames)), isLibero: libs.has(no) };
   }).sort((a, b) => b.s.n - a.s.n);
 
   // Pasör dağılımı: pasörün sırası (ön/arka) x faz (side-out/transition) x hedef

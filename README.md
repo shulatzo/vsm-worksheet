@@ -34,3 +34,4 @@ Uygulama dosyalarını değiştirdiğinizde `sw.js` içindeki `CACHE` adını ar
 
 - Vuruşun iniş bölgesi işaretlenmemişse, hemen ardından gelen rakip savunma (D) kaydındaki bölge iniş bölgesi sayılır.
 - Vuruşun başlangıç bölgesi işaretlenmemişse, hücum kodunun VolleyStation'daki başlangıç bölgesi ("start", örn. CF için 2B) kullanılır.
+- Oyuncunun rolü (smaçör / orta / çapraz), vuruş kodlarının hedef oyuncusuna göre belirlenir; başlangıç bölgesi yalnızca yedek yöntemdir.
