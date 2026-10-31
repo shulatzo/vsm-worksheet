@@ -20,7 +20,7 @@ let store = {};
 try { store = JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { store = {}; }
 store.edits ||= {}; store.sel ||= {}; store.hidden ||= {};
 store.theme ||= 'light'; store.printTheme ||= 'light';
-store.minAtt ??= true; store.cardsPer ||= 3; store.myTeam ??= '';
+store.minAtt ??= true; store.cardsPer ||= 3; store.minCard ||= 3; store.myTeam ??= '';
 let saveTimer;
 const save = () => {
   clearTimeout(saveTimer);
@@ -136,6 +136,7 @@ function renderSide() {
 
   $('#minAtt').checked = !!store.minAtt;
   $('#cardsPer').value = String(store.cardsPer);
+  $('#minCard').value = String(store.minCard);
   $('#playerList').innerHTML = model ? model.players.map(p => `
     <li><input type="checkbox" data-pl="${p.no}" ${isSelected(p) ? 'checked' : ''} aria-label="#${p.no}">
       <span>#${String(p.no).padStart(2, '0')} ${esc(displayName(p.no))}</span><span class="n">${p.s.n}</span></li>`).join('') : '';
@@ -257,7 +258,7 @@ function renderSheet() {
 
 /* ───────── oyuncu bölümü ve kartlar ───────── */
 function playerHTML(pl) {
-  let combos = pl.combos.filter(c => c.s.n >= 3).slice(0, store.cardsPer);
+  let combos = pl.combos.filter(c => c.s.n >= store.minCard).slice(0, store.cardsPer);
   if (!combos.length) combos = pl.combos.slice(0, 1);
   combos = combos.filter(c => !store.hidden[`${teamCode}|${pl.no}|${c.code}`]);
   const s = pl.s;
@@ -659,6 +660,7 @@ $('#playerList').addEventListener('change', e => {
 });
 $('#minAtt').addEventListener('change', e => { store.minAtt = e.target.checked; store.sel[teamCode] = {}; save(); renderSide(); renderSheet(); });
 $('#cardsPer').addEventListener('change', e => { store.cardsPer = +e.target.value; save(); renderSheet(); });
+$('#minCard').addEventListener('change', e => { store.minCard = +e.target.value; save(); renderSheet(); });
 
 function updateHiddenBtn() {
   const n = Object.keys(store.hidden).length;
