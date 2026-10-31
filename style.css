@@ -51,6 +51,8 @@ select.wide { width:100%; }
 .files li span.t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .files li button { border:0; background:transparent; color:var(--muted); cursor:pointer; font-size:16px; min-width:32px; min-height:32px; }
 .players li .n { margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+.help summary { cursor:pointer; font-weight:600; font-size:13.5px; }
+.help ul { margin:8px 0 0; padding-left:18px; font-size:13px; line-height:1.5; color:var(--muted); }
 .hint { font-size:12px; color:var(--muted); margin:8px 0 0; }
 .row { display:flex; gap:8px; align-items:center; font-size:13.5px; margin:6px 0; }
 .row select { margin-left:auto; }
@@ -140,6 +142,16 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
 .t-ringB .sh { fill:transparent; stroke:var(--ringB); stroke-width:2.5; pointer-events:all; }
 .t-tip .sh { fill:transparent; stroke:var(--tok); stroke-width:1.8; stroke-dasharray:3 2; pointer-events:all; }
 .t-step .sh { stroke:var(--tok); stroke-width:2; fill:none; } .t-step .hd { fill:var(--tok); }
+.t-poly .sh { stroke-width:2.5; stroke-linejoin:round; pointer-events:all; }
+.t-poly.st-zone .sh { fill:var(--accent); fill-opacity:.25; stroke:var(--accent); }
+.t-poly.st-A .sh { fill:var(--ringA); fill-opacity:.22; stroke:var(--ringA); }
+.t-poly.st-B .sh { fill:var(--ringB); fill-opacity:.22; stroke:var(--ringB); }
+.t-poly.st-tip .sh { fill:transparent; stroke:var(--tok); stroke-width:1.8; stroke-dasharray:3 2; }
+.t-poly.st-hl .sh { fill:var(--alt); fill-opacity:.28; stroke:var(--alt); }
+.vh, .eh, .rh { display:none; }
+.tok.sel .vh { display:block; fill:#fff; stroke:var(--accent); stroke-width:2; cursor:move; }
+.tok.sel .eh { display:block; fill:var(--accent); fill-opacity:.55; cursor:copy; }
+.tok.sel .rh { display:block; fill:#fff; stroke:var(--accent); stroke-width:2; cursor:nwse-resize; }
 .t-lab .sh { fill:var(--card); stroke:var(--line); stroke-width:1; } .t-lab .t { fill:var(--ink); font-size:10px; }
 .rows { padding:8px 10px 6px; display:flex; flex-direction:column; gap:5px; }
 .rows .r { display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; }
@@ -174,6 +186,7 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   .grid3 { grid-template-columns:repeat(3, minmax(0,1fr)); }
   .player, .card, .box { break-inside:avoid; }
   .tok.sel { filter:none; }
+  .vh, .eh, .rh { display:none !important; }
   .notes, .cnote { resize:none; }
   [contenteditable]:empty:before { content:''; }
 }

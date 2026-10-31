@@ -13,7 +13,7 @@ VolleyStation `.vsm` maç dosyalarından rakip analizi sayfaları hazırlayan, t
 `.vsm` dosyaları hiçbir sunucuya gönderilmez. Dosyalar tarayıcının kendi deposunda (IndexedDB) durur, düzenlemeler localStorage'dadır. Bu depoda maç verisi yoktur.
 
 ## Bilinen sınırlar
-- İniş bölgesi, scout'u yapan kişi her vuruş için girmediyse boş kalır. Kartlar bunu "iniş bölgesi X vuruşun yalnızca Y tanesinde kayıtlı" uyarısıyla gösterir.
+- Topun indiği bölge (hücumdan sonra topun rakip sahada düştüğü 1-9 arası bölge), scout'u yapan kişi her vuruş için girmediyse boş kalır. Kartlar bunu "Topun indiği bölge X vuruşun yalnızca Y tanesinde işaretlenmiş" uyarısıyla gösterir.
 - Alt bölgeler (A/B/C/D) kullanılmıyor, yalnızca 1-9 bölgeleri.
 - Oyuncu adları dosyada Türkçe karaktersiz gelir; isme tıklayıp düzeltebilirsiniz.
 - Düzenlemeler tarayıcı verisiyle birlikte silinebilir; "Yedekle" ile dosyaya alın.

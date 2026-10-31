@@ -92,7 +92,7 @@ function guessRole(sz, isSetter) {
   if (isSetter) return 'PASÖR';
   const main = top(Object.fromEntries(Object.entries(sz).filter(([z]) => z !== '8')), 1)[0];
   if (!main) return top(sz, 1)[0] && top(sz, 1)[0][0] === 8 ? 'ARKA SIRA' : '';
-  return { 4: 'DIŞTAN · OH', 2: 'ÇAPRAZ · OPP', 3: 'ORTA · MB' }[main[0]] || '';
+  return { 4: 'SMAÇÖR · OH', 2: 'ÇAPRAZ · OPP', 3: 'ORTA · MB' }[main[0]] || '';
 }
 
 // Bir takım kodu için tüm maçlardan model kurar.

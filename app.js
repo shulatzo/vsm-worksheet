@@ -146,7 +146,7 @@ function renderSide() {
 const metaKey = () => `meta|${teamCode}`;
 const getMeta = () => (store.edits[metaKey()] ||= { right: model ? model.code : '', date: '', strat: '', notes: '', lineup: 0 });
 
-const TARGETS = [['F', '4 (dıştan)', 'k1'], ['C', 'Orta', 'k2'], ['B', 'Arka · 2', 'k3'], ['P', 'Pipe', 'k4'], ['S', 'Pasörün kendisi', 'k5']];
+const TARGETS = [['F', '4 (smaçör)', 'k1'], ['C', 'Orta', 'k2'], ['B', 'Arka · 2', 'k3'], ['P', 'Pipe', 'k4'], ['S', 'Pasörün kendisi', 'k5']];
 const CELLS = [
   ['front|sideout', 'Pasör ön sırada · karşılama sonrası'],
   ['front|transition', 'Pasör ön sırada · geçiş (savunma sonrası)'],
@@ -200,12 +200,13 @@ const LEGEND = `
   <div class="legend" aria-label="Gösterge">
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><polygon points="11,2 2,16 22,16" fill="var(--accent)" opacity=".5"/></svg>Ana yön</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><line x1="3" y1="15" x2="17" y2="6" stroke="var(--alt)" stroke-width="3"/><polygon points="24,3 14,5 21,12" fill="var(--alt)"/></svg>Alternatif yön</div>
-    <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="2" y="2" width="22" height="14" fill="var(--accent)" opacity=".4"/></svg>İniş bölgesi (kaç kez)</div>
+    <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="2" y="2" width="22" height="14" fill="var(--accent)" opacity=".4"/></svg>Topun indiği bölge (kaç kez)</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="1" y="2" width="24" height="14" rx="3" fill="var(--block)"/></svg>Blok</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><ellipse cx="13" cy="9" rx="11" ry="7" fill="none" stroke="var(--ringA)" stroke-width="2.5"/></svg>Savunma A</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><ellipse cx="13" cy="9" rx="11" ry="7" fill="none" stroke="var(--ringB)" stroke-width="2.5"/></svg>Savunma B</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><circle cx="13" cy="9" r="7" fill="none" stroke="var(--tok)" stroke-width="1.8" stroke-dasharray="3 2"/></svg>Tip kapama</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><line x1="2" y1="9" x2="16" y2="9" stroke="var(--tok)" stroke-width="2"/><polygon points="16,4 25,9 16,14" fill="var(--tok)"/></svg>Oyuncunun adımı</div>
+    <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><polygon points="3,15 12,3 23,12" fill="var(--accent)" fill-opacity=".3" stroke="var(--accent)" stroke-width="2"/></svg>Bölge (çokgen)</div>
   </div>`;
 
 function renderSheet() {
@@ -255,7 +256,7 @@ function playerHTML(pl) {
 }
 
 const POS_SUGGEST = ['Çizgide savunma', 'İçeride savunma', 'Savunma A', 'Savunma B', 'Tip kapama', 'Sağa adım', 'Sola adım', 'Saha ortası', 'Standart', 'Off line'];
-const ADD_OPTS = [['def', 'Savunmacı'], ['blk', 'Blok'], ['set', 'Pasör'], ['ringA', 'Savunma A halkası'], ['ringB', 'Savunma B halkası'], ['tip', 'Tip kapama'], ['step', 'Adım oku'], ['lab', 'Etiket'], ['_rot', '↻ Seçiliyi döndür'], ['_del', '✕ Seçiliyi sil']];
+const ADD_OPTS = [['def', 'Savunmacı'], ['blk', 'Blok'], ['set', 'Pasör'], ['ringA', 'Savunma A halkası'], ['ringB', 'Savunma B halkası'], ['tip', 'Tip kapama'], ['step', 'Adım oku'], ['lab', 'Etiket'], ['poly3', '△ Üçgen bölge'], ['poly4', '▭ Dörtgen bölge'], ['poly5', '⬠ Beşgen bölge'], ['poly6', '⬡ Altıgen bölge'], ['_style', '◐ Bölge rengini değiştir'], ['_big', '＋ Seçiliyi büyüt'], ['_small', '－ Seçiliyi küçült'], ['_rot', '↻ Seçiliyi döndür'], ['_del', '✕ Seçiliyi sil']];
 
 function cardHTML(pl, c) {
   const key = `${teamCode}|${pl.no}|${c.code}`;
@@ -270,9 +271,9 @@ function cardHTML(pl, c) {
     `Çıkış: ${sz}`,
     bk ? `Karşıda: <b>B${bk[0]}</b> (%${pct(bk[1], s.blkN)})` : '',
     s.tip ? `Tip: %${pct(s.tip, s.n)}` : '',
-    phN ? `Karşılama sonrası %${pct(s.phase.sideout, phN)} · geçiş %${pct(s.phase.transition + s.phase.free, phN)}` : '',
+    phN ? `Karşılama sonrası %${pct(s.phase.sideout, phN)} (${s.phase.sideout}) · savunma sonrası %${pct(s.phase.transition + s.phase.free, phN)} (${s.phase.transition + s.phase.free})` : '',
   ].filter(Boolean).join('<br>');
-  const warn = s.lN < 5 ? `<div class="warn">İniş bölgesi ${s.n} vuruşun yalnızca ${s.lN} tanesinde kayıtlı. Yönler az örneğe dayanıyor.</div>` : '';
+  const warn = s.lN < 5 ? `<div class="warn">Topun indiği bölge ${s.n} vuruşun yalnızca ${s.lN} tanesinde işaretlenmiş. Yönler az örneğe dayanıyor.</div>` : '';
   return `
   <article class="card" data-key="${esc(key)}">
     <div class="ct"><span class="nm" title="${esc(c.name)}">${esc(c.name)}</span><small>${esc(c.code)}</small></div>
@@ -323,7 +324,7 @@ function courtSVG(s, ed) {
       dirs += `<line class="altl" x1="${o.x}" y1="9" x2="${bx}" y2="${by}"/><polygon class="alth" points="${tx},${ty} ${bx - Math.sin(a) * W},${by + Math.cos(a) * W} ${bx + Math.sin(a) * W},${by - Math.cos(a) * W}"/>`;
     }
   } else {
-    dirs = `<text class="nodata" x="110" y="96">iniş bölgesi kaydı yok</text>`;
+    dirs = `<text class="nodata" x="110" y="96">topun indiği bölge işaretlenmemiş</text>`;
   }
   return `<svg class="court" viewBox="0 0 220 162" role="img" aria-label="Hücum yönleri sahası">
     <rect class="bg" x="2" y="8" width="216" height="150"/><rect class="netr" x="2" y="2" width="216" height="6"/>
@@ -334,8 +335,35 @@ function courtSVG(s, ed) {
   </svg>`;
 }
 
+const r1 = v => Math.round(v * 10) / 10;
+const tf = t => `translate(${t.x.toFixed(1)} ${t.y.toFixed(1)})${(t.type === 'step' || t.type === 'set') && t.rot ? ` rotate(${t.rot})` : ''}${t.s && t.s !== 1 ? ` scale(${t.s.toFixed(2)})` : ''}`;
+function handleAt(t) {
+  const w = String(t.text || '').length;
+  switch (t.type) {
+    case 'blk': return [Math.max(34, w * 8 + 12) / 2, 10];
+    case 'lab': return [Math.max(30, w * 6 + 12) / 2, 9];
+    case 'set': return [11, 9];
+    case 'ringA': case 'ringB': return [19, 16];
+    case 'tip': return [15, 15];
+    case 'step': return [22, 6];
+    default: return [10, 10];
+  }
+}
+function polySVG(t) {
+  const sel = selTok && selTok.tid === t.id ? ' sel' : '';
+  const P = t.pts.map(p => p.join(',')).join(' ');
+  const eh = t.pts.map((p, i) => { const q = t.pts[(i + 1) % t.pts.length]; return `<circle class="eh" data-ei="${i}" cx="${(p[0] + q[0]) / 2}" cy="${(p[1] + q[1]) / 2}" r="4"/>`; }).join('');
+  const vh = t.pts.map((p, i) => `<circle class="vh" data-vi="${i}" cx="${p[0]}" cy="${p[1]}" r="6"/>`).join('');
+  return `<g class="tok t-poly st-${t.style || 'zone'}${sel}" data-tid="${t.id}"><polygon class="sh" points="${P}"/>${eh}${vh}</g>`;
+}
+function syncPoly(g, t) {
+  g.querySelector('.sh').setAttribute('points', t.pts.map(p => p.join(',')).join(' '));
+  g.querySelectorAll('.vh').forEach(c => { const p = t.pts[+c.dataset.vi]; c.setAttribute('cx', p[0]); c.setAttribute('cy', p[1]); });
+  g.querySelectorAll('.eh').forEach(c => { const i = +c.dataset.ei, a = t.pts[i], b = t.pts[(i + 1) % t.pts.length]; c.setAttribute('cx', (a[0] + b[0]) / 2); c.setAttribute('cy', (a[1] + b[1]) / 2); });
+}
+
 function tokenSVG(t) {
-  const rot = (t.type === 'step' || t.type === 'set') && t.rot ? ` rotate(${t.rot})` : '';
+  if (t.type === 'poly') return polySVG(t);
   let inner = '';
   switch (t.type) {
     case 'def': inner = `<circle class="sh" r="10"/><text class="t">${esc(t.text)}</text>`; break;
@@ -347,7 +375,9 @@ function tokenSVG(t) {
     case 'lab': { const w = Math.max(30, String(t.text).length * 6 + 12); inner = `<rect class="sh" x="${-w / 2}" y="-9" width="${w}" height="18" rx="4"/><text class="t">${esc(t.text)}</text>`; break; }
   }
   const sel = selTok && selTok.tid === t.id ? ' sel' : '';
-  return `<g class="tok t-${t.type}${sel}" data-tid="${t.id}" transform="translate(${t.x.toFixed(1)} ${t.y.toFixed(1)})${rot}">${inner}</g>`;
+  const [hx, hy] = handleAt(t);
+  const handle = `<g transform="translate(${hx} ${hy}) scale(${(1 / (t.s || 1)).toFixed(3)})"><circle class="rh" r="5.5"/></g>`;
+  return `<g class="tok t-${t.type}${sel}" data-tid="${t.id}" transform="${tf(t)}">${inner}${handle}</g>`;
 }
 
 function getEdit(key, s) {
@@ -391,26 +421,68 @@ function select(key, tid) {
 }
 
 let drag = null;
+const cardOf = key => [...document.querySelectorAll('.card')].find(a => a.dataset.key === key);
+
 body.addEventListener('pointerdown', e => {
   const g = e.target.closest('.tok');
   if (!g) { if (!e.target.closest('select,input,textarea,button,[contenteditable]')) select(null); return; }
   const key = g.closest('.card').dataset.key;
   const tok = store.edits[key].tokens.find(t => t.id === g.dataset.tid);
   if (!tok) return;
-  select(key, tok.id);
   const svg = g.ownerSVGElement, p = svgPoint(svg, e);
-  drag = { tok, g, svg, dx: p.x - tok.x, dy: p.y - tok.y };
+  const vh = e.target.closest('.vh'), eh = e.target.closest('.eh'), rh = e.target.closest('.rh');
+  select(key, tok.id);
+
+  if (tok.type === 'poly' && eh) {
+    // kenar ortasından yeni köşe ekle ve hemen sürüklemeye başla
+    const i = +eh.dataset.ei, a = tok.pts[i], b = tok.pts[(i + 1) % tok.pts.length];
+    tok.pts.splice(i + 1, 0, [r1((a[0] + b[0]) / 2), r1((a[1] + b[1]) / 2)]);
+    redrawCard(key); select(key, tok.id);
+    const g2 = cardOf(key).querySelector(`.tok[data-tid="${tok.id}"]`);
+    drag = { mode: 'vertex', tok, g: g2, svg: g2.ownerSVGElement, vi: i + 1, key };
+    g2.querySelector(`.vh[data-vi="${i + 1}"]`).setPointerCapture(e.pointerId);
+    e.preventDefault(); return;
+  }
+  if (tok.type === 'poly' && vh) {
+    drag = { mode: 'vertex', tok, g, svg, vi: +vh.dataset.vi, key };
+    vh.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  }
+  if (rh) {
+    drag = { mode: 'scale', tok, g, svg, key, d0: Math.max(8, Math.hypot(p.x - tok.x, p.y - tok.y)), s0: tok.s || 1 };
+    rh.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  }
+  drag = tok.type === 'poly'
+    ? { mode: 'movepoly', tok, g, svg, key, p0: p, orig: tok.pts.map(q => q.slice()) }
+    : { mode: 'move', tok, g, svg, key, dx: p.x - tok.x, dy: p.y - tok.y };
   g.setPointerCapture(e.pointerId);
   e.preventDefault();
 });
+
 body.addEventListener('pointermove', e => {
   if (!drag) return;
   const p = svgPoint(drag.svg, e), t = drag.tok;
-  t.x = clamp(p.x - drag.dx, 4, 216); t.y = clamp(p.y - drag.dy, 6, 158);
-  const rot = (t.type === 'step' || t.type === 'set') && t.rot ? ` rotate(${t.rot})` : '';
-  drag.g.setAttribute('transform', `translate(${t.x.toFixed(1)} ${t.y.toFixed(1)})${rot}`);
+  if (drag.mode === 'move') {
+    t.x = clamp(p.x - drag.dx, 4, 216); t.y = clamp(p.y - drag.dy, 6, 158);
+    drag.g.setAttribute('transform', tf(t));
+  } else if (drag.mode === 'scale') {
+    t.s = clamp(drag.s0 * Math.hypot(p.x - t.x, p.y - t.y) / drag.d0, 0.4, 4);
+    drag.g.setAttribute('transform', tf(t));
+  } else if (drag.mode === 'vertex') {
+    t.pts[drag.vi] = [r1(clamp(p.x, 0, 220)), r1(clamp(p.y, 0, 162))];
+    syncPoly(drag.g, t);
+  } else if (drag.mode === 'movepoly') {
+    const xs = drag.orig.map(q => q[0]), ys = drag.orig.map(q => q[1]);
+    const dx = clamp(p.x - drag.p0.x, -Math.min(...xs), 220 - Math.max(...xs));
+    const dy = clamp(p.y - drag.p0.y, -Math.min(...ys), 162 - Math.max(...ys));
+    t.pts = drag.orig.map(q => [r1(q[0] + dx), r1(q[1] + dy)]);
+    syncPoly(drag.g, t);
+  }
 });
-const endDrag = () => { if (drag) { save(); drag = null; } };
+const endDrag = () => {
+  if (!drag) return;
+  const d = drag; drag = null; save();
+  if (d.mode === 'scale') { redrawCard(d.key); select(d.key, d.tok.id); }
+};
 body.addEventListener('pointerup', endDrag);
 body.addEventListener('pointercancel', endDrag);
 
@@ -418,6 +490,11 @@ body.addEventListener('dblclick', e => {
   const g = e.target.closest('.tok'); if (!g) return;
   const key = g.closest('.card').dataset.key;
   const tok = store.edits[key].tokens.find(t => t.id === g.dataset.tid);
+  if (tok && tok.type === 'poly') {
+    const vh = e.target.closest('.vh');
+    if (vh && tok.pts.length > 3) { tok.pts.splice(+vh.dataset.vi, 1); save(); redrawCard(key); select(key, tok.id); }
+    return;
+  }
   if (!tok || !['def', 'blk', 'lab'].includes(tok.type)) return;
   const v = prompt('Yazı:', tok.text);
   if (v != null && v.trim()) { tok.text = v.trim().slice(0, 14); save(); redrawCard(key); select(key, tok.id); }
@@ -431,6 +508,30 @@ body.addEventListener('change', e => {
     if (v === '_del') { if (selTok && selTok.key === key) { ed.tokens = ed.tokens.filter(t => t.id !== selTok.tid); selTok = null; save(); redrawCard(key); } else toast('Önce sahadan bir sembole dokunun.'); return; }
     if (v === '_rot') { const t = selTok && selTok.key === key && ed.tokens.find(x => x.id === selTok.tid); if (t) { t.rot = ((t.rot || 0) + 45) % 360; save(); redrawCard(key); select(key, t.id); } else toast('Önce sahadan bir sembole dokunun.'); return; }
     if (!v) return;
+    if (v === '_big' || v === '_small') {
+      const t = selTok && selTok.key === key && ed.tokens.find(x => x.id === selTok.tid);
+      if (!t) { toast('Önce sahadan bir sembole dokunun.'); return; }
+      const f = v === '_big' ? 1.2 : 1 / 1.2;
+      if (t.type === 'poly') {
+        const cx = t.pts.reduce((a, q) => a + q[0], 0) / t.pts.length, cy = t.pts.reduce((a, q) => a + q[1], 0) / t.pts.length;
+        t.pts = t.pts.map(q => [r1(clamp(cx + (q[0] - cx) * f, 0, 220)), r1(clamp(cy + (q[1] - cy) * f, 0, 162))]);
+      } else t.s = clamp((t.s || 1) * f, 0.4, 4);
+      save(); redrawCard(key); select(key, t.id); return;
+    }
+    if (v === '_style') {
+      const t = selTok && selTok.key === key && ed.tokens.find(x => x.id === selTok.tid);
+      if (!t || t.type !== 'poly') { toast('Önce bir çokgen bölgeye dokunun.'); return; }
+      const order = ['zone', 'A', 'B', 'tip', 'hl'];
+      t.style = order[(order.indexOf(t.style || 'zone') + 1) % order.length];
+      save(); redrawCard(key); select(key, t.id); return;
+    }
+    if (v.startsWith('poly')) {
+      const n = +v.slice(4), R = 30, a0 = n === 4 ? -Math.PI / 4 : -Math.PI / 2;
+      const pts = Array.from({ length: n }, (_, i) => [r1(110 + R * Math.cos(a0 + 2 * Math.PI * i / n)), r1(100 + R * Math.sin(a0 + 2 * Math.PI * i / n))]);
+      ed.n = (ed.n || ed.tokens.length) + 1;
+      const t = { id: 't' + ed.n, type: 'poly', pts, style: 'zone' };
+      ed.tokens.push(t); save(); redrawCard(key); select(key, t.id); return;
+    }
     let text = '';
     if (v === 'def') text = prompt('Oyuncu / pozisyon:', '4');
     if (v === 'blk') text = prompt('Blok yazısı:', 'B2');
