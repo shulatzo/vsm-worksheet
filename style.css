@@ -37,7 +37,7 @@ body { background:var(--bg); color:var(--uiInk); font-family:"Segoe UI", system-
 .sel { display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); }
 select, input[type=text], textarea { font:inherit; color:var(--uiInk); background:var(--ui); border:1px solid var(--uiLine); border-radius:6px; padding:6px 8px; }
 select.wide { width:100%; }
-.only-narrow { display:none; }
+.bar .only-narrow { display:none; }
 
 /* ——— Yerleşim ——— */
 .layout { display:flex; align-items:flex-start; gap:16px; padding:16px; }
@@ -178,7 +178,7 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   .layout { flex-direction:column; padding:10px; }
   .side { width:100%; position:static; max-height:none; display:none; }
   .side.open { display:block; }
-  .only-narrow { display:inline-flex; }
+  .bar .only-narrow { display:inline-flex; }
   .paper { padding:14px; }
   .cols { grid-template-columns:1fr; }
   .match-head .side-t { font-size:22px; }
