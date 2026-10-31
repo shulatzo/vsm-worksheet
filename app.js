@@ -201,7 +201,8 @@ const LEGEND = `
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><polygon points="11,2 2,16 22,16" fill="var(--accent)" opacity=".5"/></svg>Ana yön</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><line x1="3" y1="15" x2="17" y2="6" stroke="var(--alt)" stroke-width="3"/><polygon points="24,3 14,5 21,12" fill="var(--alt)"/></svg>Alternatif yön</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="2" y="2" width="22" height="14" fill="var(--accent)" opacity=".4"/></svg>Topun indiği bölge (kaç kez)</div>
-    <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="1" y="2" width="24" height="14" rx="3" fill="var(--block)"/></svg>Blok</div>
+    <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="2" y="2" width="22" height="14" fill="var(--start)" opacity=".45"/><circle cx="13" cy="9" r="5" fill="var(--card)" stroke="var(--start)" stroke-width="2"/></svg>Hücumun başladığı bölge</div>
+    <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="3" y="2" width="9" height="14" rx="2" fill="var(--block)"/><rect x="14" y="2" width="9" height="14" rx="2" fill="var(--block)"/></svg>Blok (B1/B2/B3)</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><ellipse cx="13" cy="9" rx="11" ry="7" fill="none" stroke="var(--ringA)" stroke-width="2.5"/></svg>Savunma A</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><ellipse cx="13" cy="9" rx="11" ry="7" fill="none" stroke="var(--ringB)" stroke-width="2.5"/></svg>Savunma B</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><circle cx="13" cy="9" r="7" fill="none" stroke="var(--tok)" stroke-width="1.8" stroke-dasharray="3 2"/></svg>Tip kapama</div>
@@ -261,7 +262,7 @@ const ADD_OPTS = [['def', 'Savunmacı'], ['blk', 'Blok'], ['set', 'Pasör'], ['r
 function cardHTML(pl, c) {
   const key = `${teamCode}|${pl.no}|${c.code}`;
   const ed = getEdit(key, c.s);
-  cardStats.set(key, c.s);
+  cardStats.set(key, { s: c.s, no: pl.no });
   const s = c.s;
   const sz = top(s.sz, 2).map(([z, n]) => `${z}. bölge %${pct(n, s.n)}`).join(', ') || '—';
   const bk = top(s.blk, 1)[0];
@@ -280,7 +281,7 @@ function cardHTML(pl, c) {
     <div class="ctool">
       <select class="addtok" aria-label="Sembol ekle"><option value="">＋ Sembol ekle</option>${ADD_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>
       <button class="hide" aria-label="Kartı gizle">Kartı gizle</button></div>
-    ${courtSVG(s, ed)}
+    ${courtSVG(s, ed, pl.no)}
     <div class="rows">${[5, 1, 6].map(p => `<div class="r"><span class="p">POS.${p}</span><input type="text" list="posList" data-pos="${p}" value="${esc(ed.pos[p] || '')}" placeholder="…" aria-label="POS.${p}"></div>`).join('')}</div>
     <div class="facts">${facts}</div>
     ${warn}
@@ -293,54 +294,83 @@ const X = m => 2 + m * 24;
 const Y = m => 8 + m * (150 / 9);
 const zc = z => { const g = ZONE_GRID[z]; return g ? [g[0] * 3 + 1.5, g[1] * 3 + 1.5] : null; };
 
-function originOf(s) {
-  const main = top(s.sz, 1)[0];
-  if (!main) return { x: X(4.5), label: '?' };
-  const g = ZONE_GRID[main[0]];
-  const xm = g ? (2 - g[0]) * 3 + 1.5 : 4.5; // vuran takımın bakışı savunanınkinin aynasıdır
-  return { x: X(xm), label: main[0] === 8 ? 'P' : String(main[0]) };
+// Rakip yarı saha, net hattının üstüne çizilir (yalnızca 2,3,4,7,8,9 bölgeleri).
+const OFF = 100;           // rakip yarının yüksekliği
+const MPX = 100 / 6;       // rakip yarıda metre başına piksel (6 m derinlik)
+function startCell(z) {
+  const g = ZONE_GRID[z];
+  if (!g || g[1] > 1) return null;                 // arka sıra (5,6,1) çizilmez
+  const col = 2 - g[0];                            // rakip bize bakar: sağ-sol ters
+  const x0 = X(col * 3), y0 = 102 - (g[1] * 3 + 3) * MPX;
+  return { z, x0, y0, w: 72, h: 3 * MPX, x: x0 + 36, y: y0 + 1.5 * MPX };
 }
 
-function courtSVG(s, ed) {
+function originOf(s) {
+  const main = top(Object.fromEntries(Object.entries(s.sz).filter(([z]) => startCell(+z))), 1)[0];
+  const c = main && startCell(main[0]);
+  return c ? { x: c.x, y: c.y - OFF, z: c.z } : { x: 110, y: -25, z: null };
+}
+
+function courtSVG(s, ed, no) {
   const o = originOf(s);
   const lz = top(s.lz, 9);
+  const num = String(no).padStart(2, '0');
+
+  // Rakip yarı saha ve hücumun başladığı bölgeler
+  let opp = `<rect class="bg2" x="2" y="2" width="216" height="100"/>
+    <line class="zl" x1="74" y1="2" x2="74" y2="102"/><line class="zl" x1="146" y1="2" x2="146" y2="102"/><line class="zl" x1="2" y1="52" x2="218" y2="52"/>`;
+  [4, 3, 2, 7, 8, 9].forEach(z => { const c = startCell(z); opp += `<text class="zn" x="${c.x0 + 6}" y="${c.y0 + 13}">${z}</text>`; });
+  const starts = top(s.sz, 9).filter(([z]) => startCell(z));
+  const maxS = starts.length ? starts[0][1] : 1;
+  starts.forEach(([z, n]) => {
+    const c = startCell(z), main = z === o.z;
+    opp += `<rect class="sheat" x="${c.x0}" y="${c.y0}" width="${c.w}" height="${c.h}" opacity="${(0.15 + 0.4 * n / maxS).toFixed(2)}"/>
+      <circle class="sm${main ? ' main' : ''}" cx="${c.x}" cy="${c.y - 5}" r="11"/><text class="smt" x="${c.x}" y="${c.y - 1.5}">${num}</text>
+      <text class="smn" x="${c.x}" y="${c.y + 19}">${n}×</text>`;
+  });
+  if (!starts.length) opp += `<text class="nodata" x="110" y="56">çıkış bölgesi işaretlenmemiş</text>`;
+
+  // Bizim saha: iniş yoğunluğu, ana yön, alternatif yön
   let heat = '', dirs = '';
   if (s.lN) {
     heat = lz.map(([z, n]) => {
       const g = ZONE_GRID[z]; if (!g) return '';
       const x = X(g[0] * 3), y = Y(g[1] * 3), w = 72, h = 150 / 3;
       const op = (0.15 + 0.5 * (n / lz[0][1])).toFixed(2);
-      return `<rect class="heat" x="${x}" y="${y}" width="${w}" height="${h}" opacity="${op}"/><text class="hl" x="${x + w / 2}" y="${y + h / 2 + 3}">${n}×</text>`;
+      return `<rect class="heat" x="${x}" y="${y}" width="${w}" height="${h}" opacity="${op}"/><text class="hl" x="${x + w / 2}" y="${y + h - 5}">${n}×</text>`;
     }).join('');
     const [m1, m2] = lz;
     if (s.lN >= 3 && m1 && zc(m1[0])) {
       const [zx, zy] = zc(m1[0]); const tx = X(zx), ty = Y(zy);
-      dirs += `<polygon class="main" points="${o.x},9 ${tx - 17},${ty} ${tx + 17},${ty}"/>`;
+      dirs += `<polygon class="main" points="${o.x},${o.y} ${tx - 17},${ty} ${tx + 17},${ty}"/>`;
     }
     if (s.lN >= 4 && m2 && m2[1] / s.lN >= 0.2 && zc(m2[0])) {
       const [zx, zy] = zc(m2[0]); const tx = X(zx), ty = Y(zy);
-      const a = Math.atan2(ty - 9, tx - o.x), L = 9, W = 5;
+      const a = Math.atan2(ty - o.y, tx - o.x), L = 9, W = 5;
       const bx = tx - Math.cos(a) * L, by = ty - Math.sin(a) * L;
-      dirs += `<line class="altl" x1="${o.x}" y1="9" x2="${bx}" y2="${by}"/><polygon class="alth" points="${tx},${ty} ${bx - Math.sin(a) * W},${by + Math.cos(a) * W} ${bx + Math.sin(a) * W},${by - Math.cos(a) * W}"/>`;
+      dirs += `<line class="altl" x1="${o.x}" y1="${o.y}" x2="${bx}" y2="${by}"/><polygon class="alth" points="${tx},${ty} ${bx - Math.sin(a) * W},${by + Math.cos(a) * W} ${bx + Math.sin(a) * W},${by - Math.cos(a) * W}"/>`;
     }
   } else {
     dirs = `<text class="nodata" x="110" y="96">topun indiği bölge işaretlenmemiş</text>`;
   }
-  return `<svg class="court" viewBox="0 0 220 162" role="img" aria-label="Hücum yönleri sahası">
-    <rect class="bg" x="2" y="8" width="216" height="150"/><rect class="netr" x="2" y="2" width="216" height="6"/>
-    <line class="cl" x1="2" y1="${Y(3)}" x2="218" y2="${Y(3)}"/>
-    ${heat}${dirs}
-    <circle class="org" cx="${o.x}" cy="14" r="7"/><text class="orgt" x="${o.x}" y="17.2" style="fill:var(--court);stroke:none">${o.label}</text>
-    <g class="toks">${ed.tokens.map(tokenSVG).join('')}</g>
+  return `<svg class="court" viewBox="0 0 220 ${OFF + 162}" role="img" aria-label="Rakip hücum başlangıç bölgeleri ve bizim saha">
+    ${opp}
+    <g transform="translate(0 ${OFF})">
+      <rect class="bg" x="2" y="8" width="216" height="150"/><rect class="netr" x="2" y="2" width="216" height="6"/>
+      <line class="cl" x1="2" y1="${Y(3)}" x2="218" y2="${Y(3)}"/>
+      ${heat}${dirs}
+      <g class="toks">${ed.tokens.map(tokenSVG).join('')}</g>
+    </g>
   </svg>`;
 }
 
 const r1 = v => Math.round(v * 10) / 10;
 const tf = t => `translate(${t.x.toFixed(1)} ${t.y.toFixed(1)})${(t.type === 'step' || t.type === 'set') && t.rot ? ` rotate(${t.rot})` : ''}${t.s && t.s !== 1 ? ` scale(${t.s.toFixed(2)})` : ''}`;
+const blkN = t => { const m = /^B(\d)/i.exec(String(t.text || '')); return m ? Math.min(3, Math.max(1, +m[1])) : 0; };
 function handleAt(t) {
   const w = String(t.text || '').length;
   switch (t.type) {
-    case 'blk': return [Math.max(34, w * 8 + 12) / 2, 10];
+    case 'blk': { const n = blkN(t); return [(n ? n * 17 + (n - 1) * 2 : Math.max(34, w * 8 + 12)) / 2, 12]; }
     case 'lab': return [Math.max(30, w * 6 + 12) / 2, 9];
     case 'set': return [11, 9];
     case 'ringA': case 'ringB': return [19, 16];
@@ -367,7 +397,17 @@ function tokenSVG(t) {
   let inner = '';
   switch (t.type) {
     case 'def': inner = `<circle class="sh" r="10"/><text class="t">${esc(t.text)}</text>`; break;
-    case 'blk': { const w = Math.max(34, String(t.text).length * 8 + 12); inner = `<rect class="sh" x="${-w / 2}" y="-10" width="${w}" height="20" rx="3"/><text class="t">${esc(t.text)}</text>`; break; }
+    case 'blk': {
+      const n = blkN(t);
+      if (n) {
+        const bw = 17, gap = 2, tot = n * bw + (n - 1) * gap;
+        inner = Array.from({ length: n }, (_, i) => `<rect class="sh" x="${-tot / 2 + i * (bw + gap)}" y="-12" width="${bw}" height="24" rx="3"/>`).join('') + `<text class="t">${esc(t.text)}</text>`;
+      } else {
+        const w = Math.max(34, String(t.text).length * 8 + 12);
+        inner = `<rect class="sh" x="${-w / 2}" y="-12" width="${w}" height="24" rx="3"/><text class="t">${esc(t.text)}</text>`;
+      }
+      break;
+    }
     case 'set': inner = `<polygon class="sh" points="0,-11 11,9 -11,9"/>`; break;
     case 'ringA': case 'ringB': inner = `<ellipse class="sh" rx="19" ry="16"/>`; break;
     case 'tip': inner = `<circle class="sh" r="15"/>`; break;
@@ -389,7 +429,7 @@ function getEdit(key, s) {
       { id: 't1', type: 'def', x: 40, y: 124, text: '5' },
       { id: 't2', type: 'def', x: 110, y: 138, text: '6' },
       { id: 't3', type: 'def', x: 180, y: 124, text: '1' },
-      { id: 't4', type: 'blk', x: clamp(o.x, 26, 194), y: 30, text: bk ? `B${bk[0]}` : 'B2' },
+      { id: 't4', type: 'blk', x: clamp(o.x, 26, 194), y: 22, text: bk ? `B${bk[0]}` : 'B2' },
     ],
     pos: {}, note: '', n: 4,
   };
@@ -399,17 +439,18 @@ function getEdit(key, s) {
 
 function redrawCard(key) {
   const art = [...document.querySelectorAll('.card')].find(a => a.dataset.key === key);
-  const s = cardStats.get(key);
-  if (!art || !s) return;
+  const c = cardStats.get(key);
+  if (!art || !c) return;
   const svg = art.querySelector('svg.court');
-  svg.outerHTML = courtSVG(s, store.edits[key]);
+  svg.outerHTML = courtSVG(c.s, store.edits[key], c.no);
 }
 
 /* ───────── etkileşim ───────── */
 const body = $('#sheetBody');
 const svgPoint = (svg, e) => {
   const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-  return pt.matrixTransform(svg.getScreenCTM().inverse());
+  const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+  return { x: q.x, y: q.y - OFF };   // semboller bizim sahanın koordinatlarında tutulur
 };
 function select(key, tid) {
   document.querySelectorAll('.tok.sel').forEach(g => g.classList.remove('sel'));
@@ -538,7 +579,7 @@ body.addEventListener('change', e => {
     if (v === 'lab') text = prompt('Etiket:', 'Not');
     if (['def', 'blk', 'lab'].includes(v) && !(text || '').trim()) return;
     ed.n = (ed.n || ed.tokens.length) + 1;
-    const t = { id: 't' + ed.n, type: v, x: 110, y: 80, text: (text || '').trim().slice(0, 14), rot: v === 'step' ? 90 : 0 };
+    const t = { id: 't' + ed.n, type: v, x: 110, y: v === 'blk' ? 22 : 80, text: (text || '').trim().slice(0, 14), rot: v === 'step' ? 90 : 0 };
     ed.tokens.push(t); save(); redrawCard(key); select(key, t.id);
   } else if (el.matches('[data-lineup]')) {
     getMeta().lineup = +el.value; save(); renderSheet();

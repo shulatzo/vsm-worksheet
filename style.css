@@ -2,7 +2,7 @@
 :root, [data-theme="light"] {
   --bg:#EEF0F4; --paper:#FBFAF6; --ink:#14213D; --muted:#4A5568; --card:#fff; --line:#14213D;
   --head:#14213D; --headInk:#fff; --pill:#E4E7EE; --soft:#8A93A6;
-  --court:#F6C75A; --net:#14213D; --cline:#fff;
+  --court:#F6C75A; --court2:#F2E3B3; --start:#E8590C; --net:#14213D; --cline:#fff;
   --accent:#2F5BEA; --alt:#1F7A33; --block:#D62839; --blockInk:#fff;
   --tok:#14213D; --tokInk:#fff; --ringA:#C21F30; --ringB:#1F7A33;
   --warn:#FFF1C9; --warnInk:#5A3B00; --bar1:#2F5BEA; --bar2:#1F7A33; --bar3:#F08A3C; --bar4:#8A4FBF; --bar5:#8A93A6;
@@ -11,7 +11,7 @@
 [data-theme="dark"] {
   --bg:#070C16; --paper:#0B1220; --ink:#F3F6FB; --muted:#A9B4C8; --card:#131C2E; --line:#2B3A58;
   --head:#FFC93C; --headInk:#0B1220; --pill:#2B3A58; --soft:#3A4B6E;
-  --court:#176B55; --net:#F3F6FB; --cline:#E8F5EF;
+  --court:#176B55; --court2:#124A3D; --start:#FF9F43; --net:#F3F6FB; --cline:#E8F5EF;
   --accent:#36D1FF; --alt:#FFC93C; --block:#FF6B6B; --blockInk:#0B1220;
   --tok:#F3F6FB; --tokInk:#0B1220; --ringA:#FF8A8A; --ringB:#8CF5C0;
   --warn:#FFC93C; --warnInk:#0B1220; --bar1:#36D1FF; --bar2:#8CF5C0; --bar3:#FF9F43; --bar4:#C9A3FF; --bar5:#6B7A99;
@@ -123,6 +123,14 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
 .court .bg { fill:var(--court); }
 .court .netr { fill:var(--net); }
 .court .cl { stroke:var(--cline); stroke-width:2.5; }
+.court .bg2 { fill:var(--court2); }
+.court .zl { stroke:var(--cline); stroke-width:1.2; stroke-dasharray:4 3; opacity:.8; }
+.court .zn { font:700 10px "Segoe UI", sans-serif; fill:var(--ink); opacity:.55; }
+.court .sheat { fill:var(--start); }
+.court .sm { fill:var(--card); stroke:var(--start); stroke-width:2; }
+.court .sm.main { stroke-width:3.2; }
+.court .smt { font:700 10.5px "Segoe UI", sans-serif; fill:var(--ink); text-anchor:middle; }
+.court .smn { font:700 10px "Segoe UI", sans-serif; fill:var(--ink); text-anchor:middle; paint-order:stroke; stroke:var(--court2); stroke-width:3px; }
 .court .heat { fill:var(--accent); }
 .court .hl { font:700 9.5px "Segoe UI", sans-serif; fill:var(--ink); text-anchor:middle; paint-order:stroke; stroke:var(--court); stroke-width:3px; }
 .court .main { fill:var(--accent); opacity:.4; }
@@ -136,7 +144,8 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
 .tok.sel { filter:drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 2px var(--accent)); }
 .tok .t { font:700 11px "Segoe UI", sans-serif; text-anchor:middle; dominant-baseline:central; pointer-events:none; }
 .t-def .sh { fill:var(--tok); stroke:var(--court); stroke-width:1.5; } .t-def .t { fill:var(--tokInk); }
-.t-blk .sh { fill:var(--block); stroke:var(--court); stroke-width:1.5; } .t-blk .t { fill:var(--blockInk); }
+.t-blk .sh { fill:var(--block); stroke:var(--card); stroke-width:2.2; } .t-blk .t { fill:var(--blockInk); font-size:12px; font-weight:800; }
+.t-blk { filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.5)); }
 .t-set .sh { fill:var(--card); stroke:var(--tok); stroke-width:2.5; }
 .t-ringA .sh { fill:transparent; stroke:var(--ringA); stroke-width:2.5; pointer-events:all; }
 .t-ringB .sh { fill:transparent; stroke:var(--ringB); stroke-width:2.5; pointer-events:all; }
