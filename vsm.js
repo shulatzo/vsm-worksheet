@@ -13,6 +13,13 @@ function setScore(set) {
   return sc && sc.home != null && sc.away != null ? { home: Number(sc.home), away: Number(sc.away) } : null;
 }
 
+// Vuruşun iniş bölgesi işaretlenmemişse, hemen ardından rakibin savunma (D) kaydındaki bölge kullanılır.
+// Savunmacının kaydı kendi saha numarasıyla tutulur, bu yüzden iniş bölgesiyle aynı sistemdedir.
+function digZone(p, next) {
+  if (p.skill !== 'A' || p.endZone || !next || next.team === p.team || next.skill !== 'D') return null;
+  return next.startZone ? null : (next.endZone || null);
+}
+
 export function parseVsm(text, fileName) {
   let d;
   try { d = JSON.parse(text); } catch { throw new Error('Dosya okunamadı (JSON değil).'); }
@@ -52,6 +59,7 @@ export function parseVsm(text, fileName) {
         const side = p.team === '*' ? 'home' : 'away';
         const lu = ev.lineup && ev.lineup[side];
         const prev = ps[pi - 1];
+        const next = ps[pi + 1];
         const prevSame = prev && prev.team === p.team ? prev.skill : null;
         const fromPrev = prevSame === 'R' ? 'sideout' : (prevSame === 'D' || prevSame === 'B') ? 'transition' : prevSame === 'F' ? 'free' : null;
 
@@ -63,7 +71,7 @@ export function parseVsm(text, fileName) {
           set: si + 1, side, team: teams[side].code,
           no: parseInt(p.player, 10),
           skill: p.skill, effect: p.effect || null, hit: p.hitType || null,
-          comb: p.combination || null, sz: p.startZone || null, ez: p.endZone || null,
+          comb: p.combination || null, sz: p.startZone || null, ez: p.endZone || digZone(p, next) || null,
           target: p.targetAttacker || null,
           blockers: typeof p.players === 'number' ? p.players : null,
           st: p.skillType || null, phase,

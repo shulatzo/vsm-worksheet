@@ -288,9 +288,9 @@ function cardHTML(pl, c) {
     phN ? `Side-out %${pct(s.phase.sideout, phN)} (${s.phase.sideout}) · transition %${pct(s.phase.transition + s.phase.free, phN)} (${s.phase.transition + s.phase.free})` : '',
   ].filter(Boolean).join('<br>');
   const warn = s.lN >= 5 ? ''
-    : s.lN === 0 ? `<div class="warn">Topun indiği bölge bu ${s.n} vuruşun hiçbirinde işaretlenmemiş. İniş yönü gösterilemiyor.</div>`
+    : s.lN === 0 ? `<div class="warn">Topun indiği bölge bu ${s.n} vuruşun hiçbirinde belirlenememiş. İniş yönü gösterilemiyor.</div>`
     : s.lN >= s.n ? `<div class="warn">Bu kombinasyonda yalnızca ${s.n} vuruş var. Yönler çok az örneğe dayanıyor.</div>`
-    : `<div class="warn">Topun indiği bölge ${s.n} vuruşun yalnızca ${s.lN} tanesinde işaretlenmiş. Yönler az örneğe dayanıyor.</div>`;
+    : `<div class="warn">Topun indiği bölge ${s.n} vuruşun yalnızca ${s.lN} tanesinde belirlenebilmiş. Yönler az örneğe dayanıyor.</div>`;
   return `
   <article class="card" data-key="${esc(key)}">
     <div class="ct"><span class="nm" title="${esc(c.name)}">${esc(c.name)}</span><small>${esc(c.code)}</small></div>

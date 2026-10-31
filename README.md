@@ -31,3 +31,5 @@ Sonra `http://localhost:8000` adresini açın.
 Depo ayarlarında Pages → Source: `main` / root. Adres: `https://<kullanıcı>.github.io/vsm-worksheet/`
 
 Uygulama dosyalarını değiştirdiğinizde `sw.js` içindeki `CACHE` adını artırın ki kurulu uygulamalar yeni sürümü alsın.
+
+- Vuruşun iniş bölgesi işaretlenmemişse, hemen ardından gelen rakip savunma (D) kaydındaki bölge iniş bölgesi sayılır.
