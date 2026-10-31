@@ -215,6 +215,7 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   .lum-t { font-size:10px; }
   .tok.sel { filter:none; }
   .vh, .eh, .rh { display:none !important; }
+  .warn { display:none !important; } /* Az örnek uyarısı yalnızca antrenör içindir, çıktıya girmez. */
   .notes, .cnote { resize:none; }
   [contenteditable]:empty:before { content:''; }
 }

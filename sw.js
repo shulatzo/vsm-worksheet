@@ -1,7 +1,7 @@
 // Uygulama kabuğunu önbelleğe alır; internet olmadan da açılır.
 // Önce internetteki güncel sürüm denenir. Ağ yoksa ya da 3 saniyede yanıt vermezse önbellekten açılır.
 // Maç verisi burada tutulmaz, o tarayıcının IndexedDB'sindedir.
-const CACHE = 'vsm-worksheet-v12';
+const CACHE = 'vsm-worksheet-v13';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'vsm.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
