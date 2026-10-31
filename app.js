@@ -236,18 +236,21 @@ function renderSheet() {
 
   body.innerHTML = `
   <div class="paper">
+    <div class="setpage">
     <div class="match-head">
       <div class="side-t" contenteditable="true" spellcheck="false" data-my data-ph="Takımınız">${esc(left)}</div>
       <div class="mid"><small>MAÇ GÜNÜ</small><b contenteditable="true" spellcheck="false" data-meta="date" data-ph="gg.aa.yyyy">${esc(meta.date)}</b></div>
       <div class="side-t" contenteditable="true" spellcheck="false" data-meta="right" data-ph="Rakip">${esc(meta.right)}</div>
     </div>
     <div class="cols${new Set(model.lineups.map(L => L.matchId)).size <= 1 ? ' one' : ''}">
-      <div>${stratHTML()}</div>
-      <div>${lineupHTML()}</div>
+      <div class="c-st">${stratHTML()}</div>
+      <div class="c-lu">${lineupHTML()}</div>
+      <div class="c-nt"><div class="tag">NOTLAR</div><textarea class="notes" data-meta="notes" style="margin-top:8px" placeholder="Genel notlar…">${esc(meta.notes)}</textarea></div>
     </div>
-    <div style="margin-top:18px"><div class="tag">NOTLAR</div><textarea class="notes" data-meta="notes" style="margin-top:8px" placeholder="Genel notlar…">${esc(meta.notes)}</textarea></div>
-    <div style="margin-top:22px"><div class="tag">HÜCUM YÖNLERİ</div></div>
+    </div>
+    <div class="legendsec"><div class="tag">HÜCUM YÖNLERİ</div>
     ${LEGEND}
+    </div>
     ${chosen.map(playerHTML).join('')}
   </div>`;
 }

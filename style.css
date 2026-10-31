@@ -76,7 +76,9 @@ select.wide { width:100%; }
 .match-head .mid b { font-family:Bahnschrift, "Arial Narrow", sans-serif; font-size:30px; }
 
 .tag { display:inline-block; background:var(--head); color:var(--headInk); border-radius:8px; padding:4px 16px; font-family:Bahnschrift, "Arial Narrow", sans-serif; font-weight:700; font-size:20px; letter-spacing:.08em; }
-.cols { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,300px); gap:20px; margin-top:18px; align-items:start; }
+.cols { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,300px); grid-template-areas:"st lu" "nt lu"; grid-template-rows:auto 1fr; gap:20px; margin-top:18px; align-items:start; }
+.c-st { grid-area:st; } .c-lu { grid-area:lu; } .c-nt { grid-area:nt; }
+.legendsec { margin-top:22px; }
 .box { background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:14px; margin-top:8px; }
 
 .bars { display:flex; flex-direction:column; gap:12px; }
@@ -190,7 +192,7 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   .side { width:100%; position:static; max-height:none; display:none; }
   .side.open { display:block; }
   .paper { padding:14px; }
-  .cols { grid-template-columns:1fr; }
+  .cols { grid-template-columns:1fr; grid-template-areas:"st" "nt" "lu"; grid-template-rows:none; }
   .match-head .side-t { font-size:22px; }
   .match-head .mid b { font-size:22px; }
 }
@@ -206,14 +208,17 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   .player, .card, .box { break-inside:avoid; }
   /* İlk altı: başlık ve kutu hep aynı sayfada. Sığmazsa (çok maç) kutu bölünebilir. Her maç kendi sütununda alt alta. */
   /* Tek maçta strateji solda, ilk altı sağda yan yana kalır (ekrandaki gibi). */
-  .cols.one { grid-template-columns:minmax(0,1fr) minmax(0,235px); }
+  .cols.one { grid-template-columns:minmax(0,1fr) minmax(0,235px); grid-template-areas:"st lu" "nt lu"; grid-template-rows:auto 1fr; }
+  /* Pasör bölümü (başlık, strateji, ilk altı, notlar) önce gelir. Gösterge, ilk oyuncuyla aynı sayfada kalır. */
+  .c-nt { break-inside:avoid; }
+  .legendsec { break-inside:avoid; break-after:avoid; page-break-after:avoid; margin-top:0; }
   .lusec { break-inside:avoid; }
   .box.lubox { break-inside:auto; }
   .tag { break-after:avoid; }
   .lus { display:grid; grid-template-columns:repeat(var(--n,3),minmax(0,1fr)); gap:8px 10px; }
   .lus[style*="--n:1"] { display:block; }
   .lus .lum { margin:0; break-inside:avoid; page-break-inside:avoid; }
-  .lus .lu { break-inside:avoid; page-break-inside:avoid; margin-bottom:6px; }
+  .lus .lu { break-inside:avoid; page-break-inside:avoid; margin-bottom:4px; }
   .lineup.sm .grid { padding:5px 6px; gap:3px 4px; }
   .lineup.sm .pl { gap:2px; }
   .lineup.sm .pl b { width:30px; height:30px; font-size:15px; }
