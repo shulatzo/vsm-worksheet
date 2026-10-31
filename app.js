@@ -691,6 +691,12 @@ $('#importIn').addEventListener('change', async e => {
 
 /* ───────── PWA ───────── */
 if ('serviceWorker' in navigator) {
+  // Yeni sürüm devreye girince sayfayı bir kez kendisi yenilesin (ilk kurulumda yenilemez).
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !reloaded) { reloaded = true; flush(); location.reload(); }
+  });
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* çevrimdışı olmadan devam */ }));
 }
 if ('launchQueue' in window) {
