@@ -211,7 +211,15 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   .box.lubox { break-inside:auto; }
   .tag { break-after:avoid; }
   .lus { display:grid; grid-template-columns:repeat(var(--n,3),minmax(0,1fr)); gap:8px 10px; }
-  .lus .lum { margin:0; break-inside:avoid; }
+  .lus[style*="--n:1"] { display:block; }
+  .lus .lum { margin:0; break-inside:avoid; page-break-inside:avoid; }
+  .lus .lu { break-inside:avoid; page-break-inside:avoid; margin-bottom:6px; }
+  .lineup.sm .grid { padding:5px 6px; gap:3px 4px; }
+  .lineup.sm .pl { gap:2px; }
+  .lineup.sm .pl b { width:30px; height:30px; font-size:15px; }
+  .lineup.sm .pl span { font-size:8.5px; }
+  .lineup.sm .netb { height:5px; }
+  .lu-t { margin-bottom:2px; }
   .lum-t { font-size:10px; }
   .tok.sel { filter:none; }
   .vh, .eh, .rh { display:none !important; }
