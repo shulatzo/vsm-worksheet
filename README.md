@@ -33,3 +33,4 @@ Depo ayarlarında Pages → Source: `main` / root. Adres: `https://<kullanıcı>
 Uygulama dosyalarını değiştirdiğinizde `sw.js` içindeki `CACHE` adını artırın ki kurulu uygulamalar yeni sürümü alsın.
 
 - Vuruşun iniş bölgesi işaretlenmemişse, hemen ardından gelen rakip savunma (D) kaydındaki bölge iniş bölgesi sayılır.
+- Vuruşun başlangıç bölgesi işaretlenmemişse, hücum kodunun VolleyStation'daki başlangıç bölgesi ("start", örn. CF için 2B) kullanılır.

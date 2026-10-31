@@ -20,6 +20,13 @@ function digZone(p, next) {
   return next.startZone ? null : (next.endZone || null);
 }
 
+// Vuruşun başlangıç bölgesi işaretlenmemişse, hücum kodunun tanımındaki başlangıç bölgesi kullanılır
+// (VolleyStation'da kod eklenirken seçilen "start" bölgesi, örneğin CF için 2B).
+function comboStart(combos, p) {
+  const c = p.skill === 'A' && p.combination && combos[p.combination];
+  return c && c.start ? c.start.zone : null;
+}
+
 export function parseVsm(text, fileName) {
   let d;
   try { d = JSON.parse(text); } catch { throw new Error('Dosya okunamadı (JSON değil).'); }
@@ -28,7 +35,7 @@ export function parseVsm(text, fileName) {
   }
 
   const combos = {};
-  (d.attackCombinations || []).forEach(c => { combos[c.code] = { code: c.code, name: c.name, hit: c.hitType, target: c.targetAttacker }; });
+  (d.attackCombinations || []).forEach(c => { combos[c.code] = { code: c.code, name: c.name, hit: c.hitType, target: c.targetAttacker, start: c.start && c.start.zone ? { zone: +c.start.zone, sub: c.start.subZone || null } : null }; });
 
   const teamInfo = side => {
     const t = d.team[side];
@@ -71,7 +78,7 @@ export function parseVsm(text, fileName) {
           set: si + 1, side, team: teams[side].code,
           no: parseInt(p.player, 10),
           skill: p.skill, effect: p.effect || null, hit: p.hitType || null,
-          comb: p.combination || null, sz: p.startZone || null, ez: p.endZone || digZone(p, next) || null,
+          comb: p.combination || null, sz: p.startZone || comboStart(combos, p) || null, ez: p.endZone || digZone(p, next) || null,
           target: p.targetAttacker || null,
           blockers: typeof p.players === 'number' ? p.players : null,
           st: p.skillType || null, phase,
