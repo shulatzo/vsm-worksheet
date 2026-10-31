@@ -3,6 +3,16 @@
 
 const FRONT = [2, 3, 4];
 
+// Set skoru: önce setin kendi skoru, yoksa son skor olayı.
+function setScore(set) {
+  let sc = set.score;
+  if (!sc || sc.home == null) {
+    const last = (set.events || []).filter(e => e.score).pop();
+    sc = last && last.score;
+  }
+  return sc && sc.home != null && sc.away != null ? { home: Number(sc.home), away: Number(sc.away) } : null;
+}
+
 export function parseVsm(text, fileName) {
   let d;
   try { d = JSON.parse(text); } catch { throw new Error('Dosya okunamadı (JSON değil).'); }
@@ -30,7 +40,7 @@ export function parseVsm(text, fileName) {
   d.scout.sets.forEach((set, si) => {
     ['home', 'away'].forEach(side => {
       const l = set.startingLineup && set.startingLineup[side];
-      if (l && l.positions) lineups.push({ set: si + 1, side, positions: l.positions, setterAt: l.setterAt });
+      if (l && l.positions) lineups.push({ set: si + 1, side, positions: l.positions, setterAt: l.setterAt, score: setScore(set) });
     });
 
     (set.events || []).forEach(ev => {

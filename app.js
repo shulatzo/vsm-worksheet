@@ -181,9 +181,12 @@ function lineupHTML() {
     const no = parseInt(L.positions[pos], 10);
     return `<div class="pl ${String(pos) === String(L.setterAt) ? 'set' : ''}"><b>${String(no).padStart(2, '0')}</b><span>${esc(shortName(no))}</span></div>`;
   };
+  const scoreHTML = sc => sc
+    ? `<span class="lu-sc"><span class="${sc.home > sc.away ? 'w' : ''}">${sc.home}</span>–<span class="${sc.away > sc.home ? 'w' : ''}">${sc.away}</span></span>`
+    : '';
   const items = model.lineups.map(L => `
     <div class="lu">
-      <div class="lu-t">${esc(L.matchLabel)} · Set ${L.set}</div>
+      <div class="lu-t"><span>${esc(L.matchLabel)} · Set ${L.set}</span>${scoreHTML(L.score)}</div>
       <div class="lineup sm"><div class="netb"></div>
         <div class="grid">${[4, 3, 2].map(p => cell(L, p)).join('')}<div class="div"></div>${[5, 6, 1].map(p => cell(L, p)).join('')}</div>
       </div>
