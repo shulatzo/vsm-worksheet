@@ -193,8 +193,8 @@ function lineupHTML() {
     </div>`).join('');
   return `
     <div class="tag">İLK ALTI</div>
-    <div class="box" style="padding:10px">
-      ${items}
+    <div class="box lubox" style="padding:10px">
+      <div class="lus">${items}</div>
       <p class="hint">Turuncu daire pasör. Libero: ${model.libs.map(n => '#' + n).join(', ') || '—'}.</p>
     </div>`;
 }

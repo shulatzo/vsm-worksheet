@@ -200,6 +200,12 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   .paper { box-shadow:none; border-radius:0; max-width:none; margin:0; padding:0; }
   .grid3 { grid-template-columns:repeat(3, minmax(0,1fr)); }
   .player, .card, .box { break-inside:avoid; }
+  /* İlk altı kutusu uzun olabilir: sayfalar arasında bölünebilsin, dizilişler yan yana 3'lü dizilsin. */
+  .box.lubox { break-inside:auto; }
+  .tag { break-after:avoid; }
+  .lus { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px 10px; }
+  .lus .lu { margin:0; break-inside:avoid; }
+  .lu-t { font-size:9.5px; letter-spacing:0; }
   .tok.sel { filter:none; }
   .vh, .eh, .rh { display:none !important; }
   .notes, .cnote { resize:none; }
