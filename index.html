@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VSM Worksheet</title>
+<meta name="description" content="VolleyStation (.vsm) dosyalarından rakip analizi sayfaları hazırlayın.">
+<meta name="theme-color" content="#0B1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand">VSM <b>Worksheet</b></div>
+  <div class="bar-actions">
+    <button id="btnSide" class="ghost only-narrow" aria-label="Paneli aç/kapat">☰ Panel</button>
+    <label class="btn" for="fileIn">+ .vsm ekle</label>
+    <input id="fileIn" type="file" accept=".vsm,.json,application/json,*/*" multiple hidden>
+    <button id="btnTheme" class="ghost" title="Açık / koyu tema">◐ Tema</button>
+    <label class="sel" title="Yazdırma temasını seç">Çıktı
+      <select id="printTheme"><option value="light">Açık</option><option value="dark">Koyu</option></select>
+    </label>
+    <button id="btnPrint" class="btn">Yazdır / PDF</button>
+    <button id="btnExport" class="ghost" title="Düzenlemelerinizi dosya olarak kaydedin">Yedekle</button>
+    <label class="ghost btn-l" for="importIn" title="Yedek dosyasını yükle">Geri yükle</label>
+    <input id="importIn" type="file" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<div class="layout">
+  <aside id="side" class="side">
+    <section>
+      <h2>Maç dosyaları</h2>
+      <div id="drop" class="drop" tabindex="0">.vsm dosyalarını buraya bırakın<br><small>ya da yukarıdan “+ .vsm ekle”</small></div>
+      <ul id="fileList" class="files"></ul>
+      <p class="hint">Dosyalar yalnızca bu cihazda, tarayıcının içinde kalır. Hiçbir yere gönderilmez.</p>
+    </section>
+    <section>
+      <h2>Analiz edilen takım</h2>
+      <select id="teamSel" class="wide"></select>
+    </section>
+    <section>
+      <h2>Oyuncular</h2>
+      <label class="row"><input type="checkbox" id="minAtt" checked> 5’ten az vuruşu olanları gizle</label>
+      <label class="row">Oyuncu başına kart
+        <select id="cardsPer"><option>1</option><option>2</option><option selected>3</option><option>4</option></select>
+      </label>
+      <ul id="playerList" class="players"></ul>
+    </section>
+  </aside>
+
+  <main id="sheet" class="sheet-wrap" aria-live="polite">
+    <div class="empty" id="empty">
+      <h1>Rakip analiz sayfaları</h1>
+      <p>Bir veya birkaç <b>.vsm</b> dosyası ekleyin. Oyuncu kartları ve hücum yönleri dosyalardan otomatik dolar. Sonra oyuncuları sahada sürükleyip semboller ekleyerek düzenleyebilirsiniz.</p>
+      <label class="btn big" for="fileIn">+ .vsm ekle</label>
+    </div>
+    <div id="sheetBody"></div>
+  </main>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
