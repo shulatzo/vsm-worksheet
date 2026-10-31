@@ -146,12 +146,12 @@ function renderSide() {
 const metaKey = () => `meta|${teamCode}`;
 const getMeta = () => (store.edits[metaKey()] ||= { right: model ? model.code : '', date: '', strat: '', notes: '', lineup: 0 });
 
-const TARGETS = [['F', '4 (smaçör)', 'k1'], ['C', 'Orta', 'k2'], ['B', 'Arka · 2', 'k3'], ['P', 'Pipe', 'k4'], ['S', 'Pasörün kendisi', 'k5']];
+const TARGETS = [['F', '4 (smaçör)', 'k1'], ['C', 'Orta', 'k2'], ['B', '2', 'k3'], ['P', 'Pipe', 'k4'], ['B9', '1', 'k6'], ['S', 'Pasörün kendisi', 'k5']];
 const CELLS = [
-  ['front|sideout', 'Pasör ön sırada · karşılama sonrası'],
-  ['front|transition', 'Pasör ön sırada · geçiş (savunma sonrası)'],
-  ['back|sideout', 'Pasör arka sırada · karşılama sonrası'],
-  ['back|transition', 'Pasör arka sırada · geçiş (savunma sonrası)'],
+  ['front|sideout', 'Pasör ön sırada · side-out'],
+  ['front|transition', 'Pasör ön sırada · transition'],
+  ['back|sideout', 'Pasör arka sırada · side-out'],
+  ['back|transition', 'Pasör arka sırada · transition'],
 ];
 
 function stratHTML() {
@@ -275,7 +275,7 @@ function cardHTML(pl, c) {
     `Çıkış: ${sz}`,
     bk ? `Karşıda: <b>B${bk[0]}</b> (%${pct(bk[1], s.blkN)})` : '',
     s.tip ? `Tip: %${pct(s.tip, s.n)}` : '',
-    phN ? `Karşılama sonrası %${pct(s.phase.sideout, phN)} (${s.phase.sideout}) · savunma sonrası %${pct(s.phase.transition + s.phase.free, phN)} (${s.phase.transition + s.phase.free})` : '',
+    phN ? `Side-out %${pct(s.phase.sideout, phN)} (${s.phase.sideout}) · transition %${pct(s.phase.transition + s.phase.free, phN)} (${s.phase.transition + s.phase.free})` : '',
   ].filter(Boolean).join('<br>');
   const warn = s.lN < 5 ? `<div class="warn">Topun indiği bölge ${s.n} vuruşun yalnızca ${s.lN} tanesinde işaretlenmiş. Yönler az örneğe dayanıyor.</div>` : '';
   return `

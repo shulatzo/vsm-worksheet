@@ -5,7 +5,7 @@ VolleyStation `.vsm` maç dosyalarından rakip analizi sayfaları hazırlayan, t
 ## Ne yapar
 - Bir veya birkaç `.vsm` dosyasını okur (sürükle-bırak ya da "+ .vsm ekle").
 - Seçilen takım için oyuncu başına hücum kartlarını doldurur: çıkış bölgesi, iniş bölgeleri, ana ve alternatif yön, blok sayısı, sayı/hata yüzdeleri.
-- Pasör dağılımını (pasör ön/arka sırada, karşılama sonrası/geçiş) ve ilk altıyı gösterir.
+- Pasör dağılımını (pasör ön/arka sırada, side-out/transition) ve ilk altıyı gösterir.
 - Kartlar elle düzenlenir: savunmacıları ve blokları sahada sürükleyin, sembol ekleyin (halka, tip kapama, adım oku, etiket), POS.5/1/6 ve not yazın.
 - Açık / koyu tema, yazdır / PDF, yedekle / geri yükle.
 

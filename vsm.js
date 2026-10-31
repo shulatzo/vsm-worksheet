@@ -144,7 +144,7 @@ export function buildModel(matches, code) {
     return { no, last: r.last, first: r.first, list, s: total, combos, role: guessRole(total.sz, setters.has(no) && setterCount[no] > 20), isLibero: libs.has(no) };
   }).sort((a, b) => b.s.n - a.s.n);
 
-  // Pasör dağılımı: pasörün sırası (ön/arka) x faz (karşılama sonrası/geçiş) x hedef
+  // Pasör dağılımı: pasörün sırası (ön/arka) x faz (side-out/transition) x hedef
   const sets = plays.filter(p => p.skill === 'E');
   const matrix = {};
   for (const p of sets) {
@@ -153,7 +153,8 @@ export function buildModel(matches, code) {
     if (!row || !ph) continue;
     const cell = (matrix[row + '|' + ph] ||= { n: 0, t: {} });
     cell.n++;
-    const t = p.target || '-';
+    // Arka sağ hücum: pas 9. bölgeye gittiyse "1" olarak ayrı sayılır.
+    const t = p.target === 'B' && p.ez === 9 ? 'B9' : (p.target || '-');
     cell.t[t] = (cell.t[t] || 0) + 1;
   }
 
