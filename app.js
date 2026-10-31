@@ -318,7 +318,7 @@ function courtSVG(s, ed, no) {
 
   // Rakip yarı saha ve hücumun başladığı bölgeler
   let opp = `<rect class="bg2" x="2" y="2" width="216" height="100"/>
-    <line class="zl" x1="74" y1="2" x2="74" y2="102"/><line class="zl" x1="146" y1="2" x2="146" y2="102"/><line class="zl" x1="2" y1="52" x2="218" y2="52"/>`;
+    <line class="zl" x1="74" y1="2" x2="74" y2="102"/><line class="zl" x1="146" y1="2" x2="146" y2="102"/><line class="cl" x1="2" y1="52" x2="218" y2="52"/>`;
   [4, 3, 2, 7, 8, 9].forEach(z => { const c = startCell(z); opp += `<text class="zn" x="${c.x0 + 6}" y="${c.y0 + 13}">${z}</text>`; });
   const starts = top(s.sz, 9).filter(([z]) => startCell(z));
   const maxS = starts.length ? starts[0][1] : 1;
