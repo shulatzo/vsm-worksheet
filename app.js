@@ -177,21 +177,21 @@ function stratHTML() {
 
 function lineupHTML() {
   if (!model.lineups.length) return '';
-  const meta = getMeta();
-  const idx = clamp(meta.lineup || 0, 0, model.lineups.length - 1);
-  const L = model.lineups[idx];
-  const cell = pos => {
+  const cell = (L, pos) => {
     const no = parseInt(L.positions[pos], 10);
     return `<div class="pl ${String(pos) === String(L.setterAt) ? 'set' : ''}"><b>${String(no).padStart(2, '0')}</b><span>${esc(shortName(no))}</span></div>`;
   };
-  const opts = model.lineups.map((l, i) => `<option value="${i}" ${i === idx ? 'selected' : ''}>${esc(l.matchLabel)} · Set ${l.set}</option>`).join('');
+  const items = model.lineups.map(L => `
+    <div class="lu">
+      <div class="lu-t">${esc(L.matchLabel)} · Set ${L.set}</div>
+      <div class="lineup sm"><div class="netb"></div>
+        <div class="grid">${[4, 3, 2].map(p => cell(L, p)).join('')}<div class="div"></div>${[5, 6, 1].map(p => cell(L, p)).join('')}</div>
+      </div>
+    </div>`).join('');
   return `
     <div class="tag">İLK ALTI</div>
     <div class="box" style="padding:10px">
-      <select class="lineup-pick" data-lineup>${opts}</select>
-      <div class="lineup"><div class="netb"></div>
-        <div class="grid">${[4, 3, 2].map(cell).join('')}<div class="div"></div>${[5, 6, 1].map(cell).join('')}</div>
-      </div>
+      ${items}
       <p class="hint">Turuncu daire pasör. Libero: ${model.libs.map(n => '#' + n).join(', ') || '—'}.</p>
     </div>`;
 }
@@ -581,8 +581,6 @@ body.addEventListener('change', e => {
     ed.n = (ed.n || ed.tokens.length) + 1;
     const t = { id: 't' + ed.n, type: v, x: 110, y: v === 'blk' ? 22 : 80, text: (text || '').trim().slice(0, 14), rot: v === 'step' ? 90 : 0 };
     ed.tokens.push(t); save(); redrawCard(key); select(key, t.id);
-  } else if (el.matches('[data-lineup]')) {
-    getMeta().lineup = +el.value; save(); renderSheet();
   }
 });
 

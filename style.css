@@ -97,7 +97,12 @@ select.wide { width:100%; }
 .pl.set b { background:#F08A3C; color:#14213D; }
 .pl span { font-size:11.5px; font-weight:700; letter-spacing:.04em; color:#14213D; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
 [data-theme="dark"] .pl span { color:#E8F5EF; }
-.lineup-pick { margin-bottom:8px; width:100%; font-size:13px; }
+.lu { margin-bottom:10px; break-inside:avoid; }
+.lu-t { font-size:12px; font-weight:700; color:var(--muted); margin:0 0 4px; letter-spacing:.02em; }
+.lineup.sm .grid { padding:8px 6px; gap:6px 4px; }
+.lineup.sm .pl b { width:36px; height:36px; font-size:18px; border-width:2px; }
+.lineup.sm .pl span { font-size:10px; }
+.lineup.sm .netb { height:7px; }
 
 .notes { width:100%; min-height:90px; resize:vertical; border:2px dashed var(--soft); border-radius:12px; background:var(--card); color:var(--ink); padding:8px 10px; line-height:1.5;
   background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 26px, var(--line) 26px, var(--line) 27px); background-attachment:local; background-size:100% 27px; }
