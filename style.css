@@ -26,6 +26,7 @@ body { background:var(--bg); color:var(--uiInk); font-family:"Segoe UI", system-
 /* ——— Üst çubuk ——— */
 .bar { position:sticky; top:0; z-index:20; display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between;
   padding:8px 16px; background:var(--ui); color:var(--uiInk); border-bottom:1px solid var(--uiLine); }
+.bar-left { display:flex; align-items:center; gap:12px; }
 .brand { font-family:Bahnschrift, "Arial Narrow", sans-serif; font-size:20px; letter-spacing:.04em; }
 .brand b { color:var(--accent); }
 .bar-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
