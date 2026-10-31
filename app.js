@@ -184,18 +184,28 @@ function lineupHTML() {
   const scoreHTML = sc => sc
     ? `<span class="lu-sc"><span class="${sc.home > sc.away ? 'w' : ''}">${sc.home}</span>–<span class="${sc.away > sc.home ? 'w' : ''}">${sc.away}</span></span>`
     : '';
-  const items = model.lineups.map(L => `
+  const lu = L => `
     <div class="lu">
-      <div class="lu-t"><span>${esc(L.matchLabel)} · Set ${L.set}</span>${scoreHTML(L.score)}</div>
+      <div class="lu-t"><span>Set ${L.set}</span>${scoreHTML(L.score)}</div>
       <div class="lineup sm"><div class="netb"></div>
         <div class="grid">${[4, 3, 2].map(p => cell(L, p)).join('')}<div class="div"></div>${[5, 6, 1].map(p => cell(L, p)).join('')}</div>
       </div>
+    </div>`;
+  // Her maçın setleri kendi grubunda alt alta dizilir.
+  const byMatch = new Map();
+  model.lineups.forEach(L => { if (!byMatch.has(L.matchId)) byMatch.set(L.matchId, { label: L.matchLabel, list: [] }); byMatch.get(L.matchId).list.push(L); });
+  const items = [...byMatch.values()].map(g => `
+    <div class="lum">
+      <div class="lum-t">${esc(g.label)}</div>
+      ${g.list.map(lu).join('')}
     </div>`).join('');
   return `
+    <div class="lusec">
     <div class="tag">İLK ALTI</div>
     <div class="box lubox" style="padding:10px">
-      <div class="lus">${items}</div>
+      <div class="lus" style="--n:${Math.min(byMatch.size, 4)}">${items}</div>
       <p class="hint">Turuncu daire pasör. Libero: ${model.libs.map(n => '#' + n).join(', ') || '—'}.</p>
+    </div>
     </div>`;
 }
 
@@ -231,7 +241,7 @@ function renderSheet() {
       <div class="mid"><small>MAÇ GÜNÜ</small><b contenteditable="true" spellcheck="false" data-meta="date" data-ph="gg.aa.yyyy">${esc(meta.date)}</b></div>
       <div class="side-t" contenteditable="true" spellcheck="false" data-meta="right" data-ph="Rakip">${esc(meta.right)}</div>
     </div>
-    <div class="cols">
+    <div class="cols${new Set(model.lineups.map(L => L.matchId)).size <= 1 ? ' one' : ''}">
       <div>${stratHTML()}</div>
       <div>${lineupHTML()}</div>
     </div>
