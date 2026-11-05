@@ -20,7 +20,7 @@ let store = {};
 try { store = JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { store = {}; }
 store.edits ||= {}; store.sel ||= {}; store.hidden ||= {};
 store.theme ||= 'light'; store.printTheme ||= 'light';
-store.minAtt ??= true; store.cardsPer ||= 3; store.minCard ||= 3; store.myTeam ??= '';
+store.minAtt ??= true; store.cardsPer ||= 3; store.minCard ||= 3; store.showServe ??= true; store.myTeam ??= '';
 let saveTimer;
 const save = () => {
   clearTimeout(saveTimer);
@@ -137,6 +137,7 @@ function renderSide() {
   $('#minAtt').checked = !!store.minAtt;
   $('#cardsPer').value = String(store.cardsPer);
   $('#minCard').value = String(store.minCard);
+  $('#showServe').checked = !!store.showServe;
   $('#playerList').innerHTML = model ? model.players.map(p => `
     <li><input type="checkbox" data-pl="${p.no}" ${isSelected(p) ? 'checked' : ''} aria-label="#${p.no}">
       <span>#${String(p.no).padStart(2, '0')} ${esc(displayName(p.no))}</span><span class="n">${p.s.n}</span></li>`).join('') : '';
@@ -253,7 +254,91 @@ function renderSheet() {
     ${LEGEND}
     </div>
     ${chosen.map(playerHTML).join('')}
+    ${servHTML()}
   </div>`;
+}
+
+/* ───────── servis kartları ───────── */
+const SV_H = 46;   // rakibin servis çizgisi gerisi için ayrılan şerit
+const svOrigin = z => { const g = ZONE_GRID[z]; return g && g[1] === 2 ? { z, x: X((2 - g[0]) * 3) + 36 } : null; };  // rakip bize bakar: sağ-sol ters
+
+function serveCourtSVG(s, num) {
+  const ez = top(s.ez, 9);
+  const origins = top(s.sz, 9).map(([z, n]) => ({ n, ...(svOrigin(z) || {}) })).filter(o => o.x);
+  const o = origins[0] ? { x: origins[0].x, y: 20 - SV_H } : { x: 110, y: 20 - SV_H };
+  let strip = `<rect class="bg2" x="2" y="2" width="216" height="${SV_H - 2}"/>
+    <line class="zl" x1="74" y1="2" x2="74" y2="${SV_H}"/><line class="zl" x1="146" y1="2" x2="146" y2="${SV_H}"/>`;
+  [[1, 0], [6, 1], [5, 2]].forEach(([z, c]) => { strip += `<text class="zn" x="${X(c * 3) + 6}" y="13">${z}</text>`; });
+  origins.forEach((g, i) => {
+    strip += `<circle class="sm${i === 0 ? ' main' : ''}" cx="${g.x}" cy="20" r="11"/>${num != null ? `<text class="smt" x="${g.x}" y="23.5">${num}</text>` : ''}
+      <text class="smn" x="${g.x}" y="${SV_H - 5}">${g.n}×</text>`;
+  });
+  if (!origins.length) strip += `<text class="nodata" x="110" y="26">servis yeri işaretlenmemiş</text>`;
+  let heat = '', dirs = '';
+  if (s.eN) {
+    heat = ez.map(([z, n]) => {
+      const g = ZONE_GRID[z]; if (!g) return '';
+      const x = X(g[0] * 3), y = Y(g[1] * 3), w = 72, h = 150 / 3;
+      return `<rect class="heat" x="${x}" y="${y}" width="${w}" height="${h}" opacity="${(0.15 + 0.5 * (n / ez[0][1])).toFixed(2)}"/><text class="hl" x="${x + w / 2}" y="${y + h - 5}">${n}×</text>`;
+    }).join('');
+    const [m1, m2] = ez;
+    if (s.eN >= 3 && m1 && zc(m1[0])) {
+      const [zx, zy] = zc(m1[0]); const tx = X(zx), ty = Y(zy);
+      dirs += `<polygon class="main" points="${o.x},${o.y} ${tx - 17},${ty} ${tx + 17},${ty}"/>`;
+    }
+    if (s.eN >= 4 && m2 && m2[1] / s.eN >= 0.2 && zc(m2[0])) {
+      const [zx, zy] = zc(m2[0]); const tx = X(zx), ty = Y(zy);
+      const a = Math.atan2(ty - o.y, tx - o.x), L = 9, W = 5;
+      const bx = tx - Math.cos(a) * L, by = ty - Math.sin(a) * L;
+      dirs += `<line class="altl" x1="${o.x}" y1="${o.y}" x2="${bx}" y2="${by}"/><polygon class="alth" points="${tx},${ty} ${bx - Math.sin(a) * W},${by + Math.cos(a) * W} ${bx + Math.sin(a) * W},${by - Math.cos(a) * W}"/>`;
+    }
+  } else dirs = `<text class="nodata" x="110" y="96">servisin indiği bölge işaretlenmemiş</text>`;
+  return `<svg class="court" viewBox="0 0 220 ${SV_H + 162}" role="img" aria-label="Servis çıkış yeri ve hedef bölgeler">
+    ${strip}
+    <g transform="translate(0 ${SV_H})">
+      <rect class="bg" x="2" y="8" width="216" height="150"/><rect class="netr" x="2" y="2" width="216" height="6"/>
+      <line class="cl" x1="2" y1="${Y(3)}" x2="218" y2="${Y(3)}"/>
+      ${heat}${dirs}
+    </g>
+  </svg>`;
+}
+
+function serveCardHTML(title, key, no, s) {
+  const ed = (store.edits[key] ||= { tokens: [], pos: {}, note: '', n: 0 });
+  const zl = (obj, base) => top(obj, 3).map(([z, n]) => `${z}. bölge %${pct(n, base)}`).join(', ') || '—';
+  const facts = [
+    `<b>${s.n}</b> servis · ace <b>%${pct(s.ace, s.n)}</b> · hata <b>%${pct(s.err, s.n)}</b>`,
+    `Çıkış: ${zl(s.sz, s.n)}`,
+    `Hedef: ${zl(s.ez, s.eN)}`,
+  ].join('<br>');
+  const warn = s.n < 8 ? `<div class="warn">Yalnızca ${s.n} servis var. Yönler az örneğe dayanıyor.</div>` : '';
+  return `
+  <article class="card" data-key="${esc(key)}">
+    <div class="ct"><span class="nm">${esc(title)}</span><small>SERVİS</small></div>
+    <div class="ctool"><button class="hide" aria-label="Kartı gizle">Kartı gizle</button></div>
+    ${serveCourtSVG(s, no)}
+    <div class="facts">${facts}</div>
+    ${warn}
+    <textarea class="cnote" data-cnote placeholder="Kart notu…">${esc(ed.note || '')}</textarea>
+  </article>`;
+}
+
+function servHTML() {
+  if (!store.showServe || !model.serveAll.n) return '';
+  const cards = [];
+  const allKey = `${teamCode}|SERVIS|ALL`;
+  if (!store.hidden[allKey]) cards.push(serveCardHTML(`Takım · ${model.code}`, allKey, null, model.serveAll));
+  model.servers.filter(v => v.s.n >= 5).forEach(v => {
+    const key = `${teamCode}|SERVIS|${v.no}`;
+    if (!store.hidden[key]) cards.push(serveCardHTML(`#${String(v.no).padStart(2, '0')} ${displayName(v.no)}`, key, String(v.no).padStart(2, '0'), v.s));
+  });
+  if (!cards.length) return '';
+  return `
+  <section class="servsec">
+    <div class="servhead"><div class="tag">SERVİS</div>
+    <p class="hint">Üstteki şerit rakibin servis çizgisi gerisi, daire servisi atan. Alttaki saha bizim saha: koyu bölge servisin en çok indiği yer.</p></div>
+    <div class="grid3">${cards.join('')}</div>
+  </section>`;
 }
 
 /* ───────── oyuncu bölümü ve kartlar ───────── */
@@ -660,6 +745,7 @@ $('#playerList').addEventListener('change', e => {
 });
 $('#minAtt').addEventListener('change', e => { store.minAtt = e.target.checked; store.sel[teamCode] = {}; save(); renderSide(); renderSheet(); });
 $('#cardsPer').addEventListener('change', e => { store.cardsPer = +e.target.value; save(); renderSheet(); });
+$('#showServe').addEventListener('change', e => { store.showServe = e.target.checked; save(); renderSheet(); });
 $('#minCard').addEventListener('change', e => { store.minCard = +e.target.value; save(); renderSheet(); });
 
 function updateHiddenBtn() {

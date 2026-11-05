@@ -111,6 +111,18 @@ export function summarize(list) {
   return s;
 }
 
+// Servis özeti: sayı, ace, hata, çıkış bölgeleri ve topun indiği bölgeler (karşılayan takımın saha numarasıyla).
+export function summarizeServe(list) {
+  const s = { n: list.length, ace: 0, err: 0, sz: {}, ez: {}, eN: 0 };
+  for (const p of list) {
+    if (p.effect === '#') s.ace++;
+    else if (p.effect === '=') s.err++;
+    if (p.sz) s.sz[p.sz] = (s.sz[p.sz] || 0) + 1;
+    if (p.ez) { s.ez[p.ez] = (s.ez[p.ez] || 0) + 1; s.eN++; }
+  }
+  return s;
+}
+
 export const top = (obj, n = 3) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => [+k || k, v]);
 
 function guessRole(sz, isSetter, tg = {}) {
@@ -169,6 +181,12 @@ export function buildModel(matches, code) {
     return { no, last: r.last, first: r.first, list, s: total, combos, role: guessRole(total.sz, setters.has(no) && setterCount[no] > 20, roleTargets(list, comboNames)), isLibero: libs.has(no) };
   }).sort((a, b) => b.s.n - a.s.n);
 
+  // Servis atanlar
+  const serveBy = {};
+  plays.filter(p => p.skill === 'S' && Number.isFinite(p.no)).forEach(p => { (serveBy[p.no] ||= []).push(p); });
+  const servers = Object.entries(serveBy).map(([no, l]) => ({ no: +no, s: summarizeServe(l) })).sort((a, b) => b.s.n - a.s.n);
+  const serveAll = summarizeServe(plays.filter(p => p.skill === 'S'));
+
   // Pasör dağılımı: pasörün sırası (ön/arka) x faz (side-out/transition) x hedef
   const sets = plays.filter(p => p.skill === 'E');
   const matrix = {};
@@ -183,7 +201,7 @@ export function buildModel(matches, code) {
     cell.t[t] = (cell.t[t] || 0) + 1;
   }
 
-  return { code, name: teamName, matches: mm.map(m => m.id), players, roster, libs: [...libs], setters: top(setterCount, 3).filter(([, n]) => n >= 5), matrix, lineups, setCount: sets.length };
+  return { code, name: teamName, matches: mm.map(m => m.id), players, roster, libs: [...libs], setters: top(setterCount, 3).filter(([, n]) => n >= 5), matrix, lineups, servers, serveAll, setCount: sets.length };
 }
 
 export const ZONE_GRID = { 4: [0, 0], 3: [1, 0], 2: [2, 0], 7: [0, 1], 8: [1, 1], 9: [2, 1], 5: [0, 2], 6: [1, 2], 1: [2, 2] };
