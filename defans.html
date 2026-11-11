@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Defans Planı · VSM Worksheet</title>
+<meta name="description" content="Sunumdaki heatmap görsellerinin üzerine defans dairelerini yerleştirin, PDF alın.">
+<meta name="theme-color" content="#0B1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="defans.css">
+</head>
+<body>
+
+<header class="bar" id="topbar">
+  <div class="bar-left">
+    <button id="btnNav" class="ghost" aria-label="Slayt listesini göster/gizle">☰ Slaytlar</button>
+    <div class="brand">Defans <b>Planı</b></div>
+    <a class="ghost btn-l" href="./">← Rakip analizi</a>
+  </div>
+  <div class="bar-actions">
+    <label class="btn" for="pptIn">.pptx aç</label>
+    <input id="pptIn" type="file" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden>
+    <button id="btnUndo" class="ghost" title="Geri al (Ctrl+Z)" aria-label="Geri al">↶ Geri al</button>
+    <button id="btnRedo" class="ghost" title="Yinele (Ctrl+Y)" aria-label="Yinele">↷</button>
+    <label class="chk" title="Açıkken dokunmak daire eklemez, sürüklemez"><input type="checkbox" id="lock"> Kilitle</label>
+    <label class="sel">Daire boyutu
+      <select id="size"><option value="0.11">Küçük</option><option value="0.15" selected>Orta</option><option value="0.19">Büyük</option><option value="0.24">Çok büyük</option></select>
+    </label>
+    <label class="chk" title="PDF'e yalnızca daire ya da etiket konmuş slaytlar girsin"><input type="checkbox" id="onlyMarked" checked> PDF: yalnız işaretliler</label>
+    <button id="btnPrint" class="btn">Yazdır / PDF</button>
+    <button id="btnExport" class="ghost" title="Daireleri dosya olarak kaydet">Yedekle</button>
+    <label class="ghost btn-l" for="importIn" title="Yedek dosyasını yükle">Geri yükle</label>
+    <input id="importIn" type="file" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<div class="dlayout">
+  <nav id="nav" class="dnav" aria-label="Slaytlar"></nav>
+  <main id="stage" class="stage">
+    <div id="empty" class="dempty">
+      <h1>Defans Planı</h1>
+      <p>Heatmap sunumunuzu (.pptx) açın. Slaytlar sunumdaki yerleşimle aynen gösterilir; heatmap görsellerine <b>hiç dokunulmaz</b>, daireler üstlerine ayrı bir katman olarak konur.</p>
+      <label class="btn big" for="pptIn">.pptx aç</label>
+      <div id="drop" class="drop" tabindex="0">ya da dosyayı buraya bırakın</div>
+      <ul class="how">
+        <li>Sahanın üzerine <b>dokunun</b>: daire eklenir (1’den 6’ya sırayla numaralanır).</li>
+        <li>Daireyi <b>sürükleyin</b>: konumu değişir. Daireye dokununca alttaki çubuktan numara, renk, oval/daire ve silme çıkar.</li>
+        <li>Çubuktaki <b>Formasyon</b> ile 6 daireyi tek dokunuşta yerleştirip sonra düzeltebilirsiniz; <b>Kopyala / Yapıştır</b> ile bir sahadaki dizilişi başka sahaya aktarırsınız.</li>
+        <li><b>RIGHT TO RIGHT</b> gibi notlar heatmap’in alt mavi şeridine yazılır.</li>
+        <li>Her şey otomatik kaydedilir. Sunumu sonradan güncellerseniz, görseli değişmeyen heatmap’lerin daireleri yerinde kalır.</li>
+      </ul>
+    </div>
+    <div id="slides"></div>
+  </main>
+</div>
+
+<div id="tray" class="tray" hidden>
+  <div class="tr-row" id="trDot" hidden>
+    <span class="tr-l">Daire</span>
+    <span class="seg" id="trNums"></span>
+    <button class="chip" id="trNumCustom" title="Başka numara ya da harf yaz">✎</button>
+    <span class="seg" id="trCols"></span>
+    <button class="chip" id="trShape" title="Daire / oval (iki oyuncu)">○ / ⬭</button>
+    <button class="chip danger" id="trDel">Sil</button>
+  </div>
+  <div class="tr-row">
+    <span class="tr-l">Saha</span>
+    <select id="trForm" aria-label="Formasyon"><option value="">Formasyon…</option><option value="f1">2 blok + 4 defans</option><option value="f2">1 blok + 5 defans</option></select>
+    <button class="chip" id="trCopy">Kopyala</button>
+    <button class="chip" id="trPaste">Yapıştır</button>
+    <button class="chip danger" id="trClear">Daireleri temizle</button>
+    <span class="tr-sep"></span>
+    <span class="seg" id="trCaps"></span>
+    <input id="trCap" type="text" placeholder="Not (alt şeride yazılır)" maxlength="40" aria-label="Saha notu">
+  </div>
+</div>
+
+<script src="vendor/jszip.min.js"></script>
+<script src="defans.js"></script>
+</body>
+</html>

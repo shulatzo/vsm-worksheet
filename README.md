@@ -37,3 +37,14 @@ Uygulama dosyalarını değiştirdiğinizde `sw.js` içindeki `CACHE` adını ar
 - Oyuncunun rolü (smaçör / orta / çapraz), vuruş kodlarının hedef oyuncusuna göre belirlenir; başlangıç bölgesi yalnızca yedek yöntemdir.
 
 - Servis: takımın ve her servisçinin çıkış yeri ve topun indiği bölgeler (sol panelden açılıp kapanır). Servisin indiği bölge karşılayan takımın saha numarasıyla tutulur.
+
+
+## Defans Planı (`defans.html`)
+
+Heatmap sunumunun (.pptx) üzerine defans dairelerini yerleştirmek için ayrı bir sayfa. Ana uygulamadaki "Defans planı" düğmesinden açılır.
+
+- .pptx tarayıcıda açılır (JSZip, `vendor/`), slaytlar sunumdaki konumlarıyla çizilir. Heatmap görsellerine dokunulmaz; daireler ayrı katmandır.
+- Her görseldeki turuncu saha alanı otomatik bulunur; daireler saha koordinatında (0–1) saklanır ve görselin SHA-1 özetine bağlıdır. Sunum güncellenip görsel aynı kalırsa daireler yerinde durur.
+- Sahaya dokun = daire ekle, sürükle = taşı. Alt çubuk: numara, renk, daire/oval, sil, formasyon, kopyala/yapıştır, alt şerit notu (RIGHT TO RIGHT vb.).
+- Otomatik kaydedilir (IndexedDB), Yedekle/Geri yükle ile dosyaya alınır. Yazdır / PDF: slayt boyutunda sayfa, istenirse yalnız işaretli slaytlar.
+- Desteklenmeyenler (tablo, grafik, çizgi vb.) çizilemez; slayt başlığında uyarı çıkar, orijinalle karşılaştırın.
