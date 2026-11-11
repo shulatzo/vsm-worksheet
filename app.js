@@ -1,4 +1,4 @@
-import { parseVsm, buildModel, top, ZONE_GRID } from './vsm.js';
+import { parseVsm, buildModel, top, ZONE_GRID, heatGrid } from './vsm.js';
 
 /* ───────── yardımcılar ───────── */
 const $ = s => document.querySelector(s);
@@ -20,7 +20,7 @@ let store = {};
 try { store = JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { store = {}; }
 store.edits ||= {}; store.sel ||= {}; store.hidden ||= {};
 store.theme ||= 'light'; store.printTheme ||= 'light';
-store.minAtt ??= true; store.cardsPer ||= 3; store.minCard ||= 3; store.showServe ??= true; store.myTeam ??= '';
+store.minAtt ??= true; store.cardsPer ||= 3; store.minCard ||= 3; store.showServe ??= true; store.showHeat ??= false; store.myTeam ??= '';
 let saveTimer;
 const save = () => {
   clearTimeout(saveTimer);
@@ -138,6 +138,7 @@ function renderSide() {
   $('#cardsPer').value = String(store.cardsPer);
   $('#minCard').value = String(store.minCard);
   $('#showServe').checked = !!store.showServe;
+  $('#showHeat').checked = !!store.showHeat;
   $('#playerList').innerHTML = model ? model.players.map(p => `
     <li><input type="checkbox" data-pl="${p.no}" ${isSelected(p) ? 'checked' : ''} aria-label="#${p.no}">
       <span>#${String(p.no).padStart(2, '0')} ${esc(displayName(p.no))}</span><span class="n">${p.s.n}</span></li>`).join('') : '';
@@ -355,8 +356,71 @@ function playerHTML(pl) {
       <span class="tot">${s.n} vuruş · sayı %${pct(s.k, s.n)} · hata %${pct(s.e, s.n)}</span>
     </div>
     <div class="grid3">${combos.map(c => cardHTML(pl, c)).join('')}</div>
+    ${store.showHeat ? heatBlock(pl, combos) : ''}
   </section>`;
 }
+
+/* ───────── heatmap kartları (bölge / alt bölge verisinden) ───────── */
+const HM_N = 108;                       // ısı resminin kenarı (piksel), saha 9 m
+const HM_STOPS = [[0, [120, 60, 200, 0]], [0.06, [130, 70, 200, 0.30]], [0.18, [70, 110, 220, 0.55]], [0.33, [60, 200, 70, 0.9]], [0.55, [190, 230, 40, 0.95]], [0.75, [255, 215, 0, 0.98]], [1, [255, 50, 20, 1]]];
+const hmCache = new Map();
+function heatURL(g) {
+  const key = g.map(v => v.toFixed(2)).join(',');
+  if (hmCache.has(key)) return hmCache.get(key);
+  const N = HM_N, cell = N / 6, sg = 0.6 * cell, R = Math.ceil(3 * sg);
+  const dens = new Float32Array(N * N);
+  g.forEach((w, i) => {
+    if (!w) return;
+    const cx = (i % 6 + 0.5) * cell, cy = (Math.floor(i / 6) + 0.5) * cell;
+    for (let y = Math.max(0, Math.floor(cy - R)); y <= Math.min(N - 1, Math.ceil(cy + R)); y++)
+      for (let x = Math.max(0, Math.floor(cx - R)); x <= Math.min(N - 1, Math.ceil(cx + R)); x++) {
+        const d2 = (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2; dens[y * N + x] += w * Math.exp(-d2 / (2 * sg * sg));
+      }
+  });
+  const cv = document.createElement('canvas'); cv.width = cv.height = N;
+  const cx = cv.getContext('2d'); const im = cx.createImageData(N, N);
+  for (let i = 0; i < N * N; i++) {
+    const t = Math.min(1, dens[i] / 3);              // sabit ölçek: 3 üst üste vuruş = kırmızı
+    let k = 1; while (k < HM_STOPS.length - 1 && HM_STOPS[k][0] < t) k++;
+    const [t0, c0] = HM_STOPS[k - 1], [t1, c1] = HM_STOPS[k], f = t1 === t0 ? 0 : (t - t0) / (t1 - t0);
+    im.data[i * 4] = c0[0] + (c1[0] - c0[0]) * f; im.data[i * 4 + 1] = c0[1] + (c1[1] - c0[1]) * f; im.data[i * 4 + 2] = c0[2] + (c1[2] - c0[2]) * f;
+    im.data[i * 4 + 3] = 255 * (c0[3] + (c1[3] - c0[3]) * f);
+  }
+  cx.putImageData(im, 0, 0);
+  const url = cv.toDataURL('image/png'); hmCache.set(key, url); return url;
+}
+function heatCardHTML(c) {
+  const s = c.s, n = s.n, pc = v => Math.round(100 * v / n);
+  const hg = heatGrid(c.list);
+  const eff = pc(s.k - s.e - s.b);
+  const L = [['Tot:', n, 'E:', eff + '%'], ['Pts:', pc(s.k) + '%', 'Err:', pc(s.e) + '%']];
+  if (s.b) L.push(['', '', 'Blo:', pc(s.b) + '%']);
+  const hdr = L.map((r, i) => `<text class="hk" x="100" y="${12 + i * 11}">${r[0]}</text><text class="hv" x="152" y="${12 + i * 11}">${r[1]}</text><text class="hk" x="168" y="${12 + i * 11}">${r[2]}</text><text class="hv" x="236" y="${12 + i * 11}">${r[3]}</text>`).join('');
+  const Y0 = 38;                                              // saha çizim alanı üstü
+  const note = hg.n ? `Bölge işaretli ${hg.n}/${n} vuruş · alt bölge ${hg.nSub}` : 'Topun indiği bölge işaretli değil';
+  return `<figure class="hcard" title="${esc(note)}">
+    <svg viewBox="0 0 240 ${Y0 + 206}" role="img" aria-label="${esc(c.code)} iniş yoğunluğu">
+      <text class="hl1" x="4" y="22">${esc(c.code)}</text>${hdr}
+      <rect class="hblue" x="0" y="${Y0}" width="240" height="206"/>
+      <rect class="hcourt" x="30" y="${Y0 + 4}" width="180" height="180"/>
+      ${hg.n ? `<image href="${heatURL(hg.g)}" x="30" y="${Y0 + 4}" width="180" height="180" preserveAspectRatio="none" style="image-rendering:auto"/>` : ''}
+      <line class="hline" x1="26" y1="${Y0 + 64}" x2="214" y2="${Y0 + 64}"/>
+      <line class="hdot" x1="90" y1="${Y0 + 64}" x2="90" y2="${Y0 + 184}"/><line class="hdot" x1="150" y1="${Y0 + 64}" x2="150" y2="${Y0 + 184}"/><line class="hdot" x1="30" y1="${Y0 + 124}" x2="210" y2="${Y0 + 124}"/>
+      <rect class="hframe" x="30" y="${Y0 + 4}" width="180" height="180"/>
+      <line class="hline" x1="120" y1="${Y0 + 180}" x2="120" y2="${Y0 + 184}"/>
+    </svg>
+    <figcaption>${esc(c.name)}</figcaption>
+  </figure>`;
+}
+function heatBlock(pl, combos) {
+  const cs = combos.filter(c => c.s.n);
+  if (!cs.length) return '';
+  const allN = cs.reduce((a, c) => a + heatGrid(c.list).nSub, 0), allZ = cs.reduce((a, c) => a + heatGrid(c.list).n, 0);
+  return `<div class="heatsec"><div class="tag">HEATMAP · topun indiği bölge (bölge/alt bölge verisi)</div>
+    <div class="hgrid">${cs.map(heatCardHTML).join('')}</div>
+    <div class="hnote">Alt bölgesi işaretli vuruşlar tam yerine, işaretsizler bölgenin içine eşit yayıldı (${allN}/${allZ} vuruşta alt bölge var). Renk ölçeği sabit: 3 üst üste vuruş kırmızı.</div></div>`;
+}
+
 
 const POS_SUGGEST = ['Çizgide savunma', 'İçeride savunma', 'Savunma A', 'Savunma B', 'Tip kapama', 'Sağa adım', 'Sola adım', 'Saha ortası', 'Standart', 'Off line'];
 const ADD_OPTS = [['def', 'Savunmacı'], ['blk', 'Blok'], ['set', 'Pasör'], ['ringA', 'Savunma A halkası'], ['ringB', 'Savunma B halkası'], ['tip', 'Tip kapama'], ['step', 'Adım oku'], ['lab', 'Etiket'], ['poly3', '△ Üçgen bölge'], ['poly4', '▭ Dörtgen bölge'], ['poly5', '⬠ Beşgen bölge'], ['poly6', '⬡ Altıgen bölge'], ['_style', '◐ Bölge rengini değiştir'], ['_big', '＋ Seçiliyi büyüt'], ['_small', '－ Seçiliyi küçült'], ['_rot', '↻ Seçiliyi döndür'], ['_del', '✕ Seçiliyi sil']];
@@ -745,6 +809,7 @@ $('#playerList').addEventListener('change', e => {
 });
 $('#minAtt').addEventListener('change', e => { store.minAtt = e.target.checked; store.sel[teamCode] = {}; save(); renderSide(); renderSheet(); });
 $('#cardsPer').addEventListener('change', e => { store.cardsPer = +e.target.value; save(); renderSheet(); });
+$('#showHeat').addEventListener('change', e => { store.showHeat = e.target.checked; save(); renderSheet(); });
 $('#showServe').addEventListener('change', e => { store.showServe = e.target.checked; save(); renderSheet(); });
 $('#minCard').addEventListener('change', e => { store.minCard = +e.target.value; save(); renderSheet(); });
 

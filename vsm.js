@@ -79,6 +79,7 @@ export function parseVsm(text, fileName) {
           no: parseInt(p.player, 10),
           skill: p.skill, effect: p.effect || null, hit: p.hitType || null,
           comb: p.combination || null, sz: p.startZone || comboStart(combos, p) || null, ez: p.endZone || digZone(p, next) || null,
+          esub: p.endZone ? (p.endSubZone || null) : (digZone(p, next) ? (next.endSubZone || null) : null),
           target: p.targetAttacker || null,
           blockers: typeof p.players === 'number' ? p.players : null,
           st: p.skillType || null, phase,
@@ -121,6 +122,21 @@ export function summarizeServe(list) {
     if (p.ez) { s.ez[p.ez] = (s.ez[p.ez] || 0) + 1; s.eN++; }
   }
   return s;
+}
+
+// Topun indiği yerin 6x6'lık (alt bölge) ısı tablosu. Alt bölge işaretliyse o hücreye 1, değilse bölgenin dört hücresine 0,25 yazılır.
+// Düzen: bölge ızgarası ZONE_GRID (4 solda, ağ üstte); alt bölgeler üst sıra C B, alt sıra D A (kendi sahasından, ağa bakınca).
+const SUB_CELL = { C: [0, 0], B: [1, 0], D: [0, 1], A: [1, 1] };
+export function heatGrid(list) {
+  const g = new Array(36).fill(0); let n = 0, nSub = 0;
+  for (const p of list) {
+    const z = ZONE_GRID[p.ez]; if (!z) continue;
+    n++;
+    const sc = p.esub && SUB_CELL[p.esub];
+    if (sc) { g[(z[1] * 2 + sc[1]) * 6 + z[0] * 2 + sc[0]] += 1; nSub++; }
+    else for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) g[(z[1] * 2 + dy) * 6 + z[0] * 2 + dx] += 0.25;
+  }
+  return { g, n, nSub };
 }
 
 export const top = (obj, n = 3) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => [+k || k, v]);
