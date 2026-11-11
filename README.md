@@ -48,3 +48,4 @@ Heatmap sunumunun (.pptx) üzerine defans dairelerini yerleştirmek için ayrı 
 - Sahaya dokun = daire ekle, sürükle = taşı. Alt çubuk: numara, renk, daire/oval, sil, formasyon, kopyala/yapıştır, alt şerit notu (RIGHT TO RIGHT vb.).
 - Otomatik kaydedilir (IndexedDB), Yedekle/Geri yükle ile dosyaya alınır. Yazdır / PDF: slayt boyutunda sayfa, istenirse yalnız işaretli slaytlar.
 - Desteklenmeyenler (tablo, grafik, çizgi vb.) çizilemez; slayt başlığında uyarı çıkar, orijinalle karşılaştırın.
+- **PowerPoint (.pptx):** özgün sunumun kopyasına daireler/oval/notlar düzenlenebilir şekiller olarak eklenir (döndürme, numara, renk korunur); özgün dosya değişmez. Slaytlar silinmez, tümü çıkar.

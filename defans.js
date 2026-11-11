@@ -238,12 +238,12 @@ async function parseDeck(buf, name) {
 
     const firstText = out.find(o => o.kind === 'text');
     const nameTxt = firstText ? firstText.paras.map(p => p.runs.map(r => r.t).join('')).join(' ').trim() : '';
-    slides.push({ idx: i, name: nameTxt || ('Slayt ' + (i + 1)), items: out, warns: [...new Set(warns)] });
+    slides.push({ idx: i, path: sp, name: nameTxt || ('Slayt ' + (i + 1)), items: out, warns: [...new Set(warns)] });
   }
 
   // saha (turuncu alan) tespiti
   for (const s of slides) for (const it of s.items) if (it.kind === 'pic') it.court = await detectCourt(it.blob);
-  return { W, H, slides, name };
+  return { W, H, slides, name, buf };
 }
 
 /* Heatmap görselindeki turuncu saha alanını bulur. Bulunamazsa null (o görsele daire konmaz). */
@@ -355,6 +355,7 @@ function addCourt(picEl, it, vw, vh) {
   if (bandH * it.box.h > 130000) { cap.style.cssText = `top:${bandTop * 100}%;height:${bandH * 100}%;font-size:calc(${Math.min(bandH * it.box.h * 0.5, 150000) / deck.W * 100}cqw);`; }
   else { cap.classList.add('below'); cap.style.cssText = `top:100%;height:${cq(190000)};font-size:${cq(150000)};`; }
   picEl.appendChild(cap);
+  it.rect = { x: it.box.x + bx0 * it.box.w, y: it.box.y + by0 * it.box.h, w: (bx1 - bx0) * it.box.w, h: (by1 - by0) * it.box.h, bandTop: by1, bandH: bandH, bx: it.box.x, by: it.box.y, bw: it.box.w, bh: it.box.h };
   courtEls[it.key] = { el, cap, slide: it.name };
 }
 
@@ -590,6 +591,64 @@ const drop = $('#drop');
 ['dragover', 'dragenter'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
 document.addEventListener('drop', async e => { const f = [...(e.dataTransfer?.files || [])].find(f => /\.pptx$/i.test(f.name)); if (f) await openDeck(await f.arrayBuffer(), f.name); });
+
+/* ——— PowerPoint çıktısı: özgün sunumun kopyasına, düzenlenebilir şekiller olarak eklenir ——— */
+const xesc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const hex6 = c => (c || '#111111').replace('#', '').toUpperCase();
+function spXml(id, name, o) {
+  const rot = o.rot ? ` rot="${Math.round(((o.rot % 360) + 360) % 360 * 60000)}"` : '';
+  const geom = `<a:prstGeom prst="${o.geom || 'rect'}"><a:avLst/></a:prstGeom>`;
+  const ln = o.line ? `<a:ln w="${Math.round(o.lw)}"><a:solidFill><a:srgbClr val="${hex6(o.line)}"/></a:solidFill></a:ln>` : '<a:ln><a:noFill/></a:ln>';
+  const run = o.text ? `<a:r><a:rPr lang="tr-TR" sz="${Math.round(o.sz / 12700 * 100)}" b="1" dirty="0"><a:solidFill><a:srgbClr val="${hex6(o.color)}"/></a:solidFill><a:latin typeface="Arial"/><a:cs typeface="Arial"/></a:rPr><a:t>${xesc(o.text)}</a:t></a:r>` : '';
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${xesc(name)}"/><p:cNvSpPr${o.txBox ? ' txBox="1"' : ''}/><p:nvPr/></p:nvSpPr>` +
+    `<p:spPr><a:xfrm${rot}><a:off x="${Math.round(o.x)}" y="${Math.round(o.y)}"/><a:ext cx="${Math.round(o.w)}" cy="${Math.round(o.h)}"/></a:xfrm>${geom}<a:noFill/>${ln}</p:spPr>` +
+    `<p:txBody><a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" rtlCol="0" anchor="ctr"${o.rot ? ' upright="1"' : ''}><a:noAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="ctr"/>${run}<a:endParaRPr lang="tr-TR" dirty="0"/></a:p></p:txBody></p:sp>`;
+}
+async function exportPptx() {
+  if (!deck?.buf) { toast('Önce bir .pptx açın.'); return; }
+  const btn = $('#btnPptx'); btn.disabled = true;
+  try {
+    const zip = await JSZip.loadAsync(deck.buf);
+    let nDots = 0, nCaps = 0;
+    for (const s of deck.slides) {
+      const marked = s.items.filter(i => i.kind === 'pic' && i.rect && (A.courts[i.key]?.c?.length || A.courts[i.key]?.cap));
+      if (!marked.length) continue;
+      const f = zip.file(s.path); if (!f) continue;
+      let xml = await f.async('string');
+      let id = Math.max(1, ...[...xml.matchAll(/<p:cNvPr[^>]*\sid="(\d+)"/g)].map(m => +m[1])) + 1;
+      let add = '';
+      for (const it of marked) {
+        const r = it.rect, data = A.courts[it.key];
+        const d = A.size * r.w;
+        (data.c || []).forEach((c, i) => {
+          const oval = c.sh === 'o'; const w = oval ? d * 2 : d, h = d;
+          const cx = r.x + c.x * r.w, cy = r.y + c.y * r.h;
+          add += spXml(id++, 'Defans daire ' + (c.n || i + 1), { x: cx - w / 2, y: cy - h / 2, w, h, rot: oval ? c.rot : 0, geom: 'ellipse', line: COLORS[c.col] || COLORS.k,
+            lw: Math.max(r.w * 0.022, 19050), text: (A.nums !== false && String(c.n) !== '') ? String(c.n) : '', sz: d * (String(c.n).length > 1 ? 0.46 : 0.58), color: COLORS[c.col] || COLORS.k });
+          nDots++;
+        });
+        if (data.cap) {
+          const bandPx = r.bandH * r.bh;
+          const tall = bandPx > 130000;
+          const sz = tall ? Math.min(bandPx * 0.5, 150000) : 150000;
+          add += spXml(id++, 'Defans notu', { txBox: true, x: r.bx, y: tall ? r.by + r.bandTop * r.bh : r.by + r.bh, w: r.bw, h: tall ? bandPx : 190000,
+            text: data.cap.toUpperCase(), sz, color: tall ? '#FFFFFF' : '#14213D' });
+          nCaps++;
+        }
+      }
+      xml = xml.replace(/<\/p:spTree>/, add + '</p:spTree>');
+      zip.file(s.path, xml);
+    }
+    if (!nDots && !nCaps) { toast('Eklenecek daire ya da not yok.'); return; }
+    const out = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(out);
+    a.download = (deck.name || 'sunum').replace(/\.pptx$/i, '') + '-defans.pptx'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast(`PowerPoint hazır: ${nDots} daire${nCaps ? ', ' + nCaps + ' not' : ''} eklendi. Özgün sunum değişmedi.`, 5000);
+  } catch (err) { console.error(err); toast('PowerPoint oluşturulamadı: ' + (err.message || err)); }
+  finally { btn.disabled = false; }
+}
+$('#btnPptx').addEventListener('click', exportPptx);
 
 /* ——— açılış ——— */
 (async function init() {
