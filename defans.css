@@ -81,3 +81,11 @@ body.locked .court { touch-action:auto; cursor:default; }
   .court.sel-c { outline:0; }
   .dot.sel { box-shadow:none; }
 }
+
+.dot .dn { display:block; pointer-events:none; }
+.rot-h { position:absolute; left:100%; top:50%; width:calc(var(--cw) * 0.07); height:calc(var(--cw) * 0.07); min-width:16px; min-height:16px; margin-left:calc(var(--cw) * 0.03); transform:translateY(-50%); border-radius:50%; background:var(--accent); border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.3); cursor:grab; touch-action:none; }
+.rot-h::after { content:""; position:absolute; inset:-14px; }
+@media print { .rot-h { display:none !important; } }
+
+.cap, .toast, .sl-head { user-select:none; -webkit-user-select:none; }
+.stage { -webkit-touch-callout:none; }

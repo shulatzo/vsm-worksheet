@@ -28,7 +28,7 @@ const idb = {
 
 /* ——— durum ——— */
 let deck = null;                         // {W,H,slides:[…],name}
-let A = { courts: {}, size: 0.15 };      // {courts:{anahtar:{c:[daire],cap:''}}, size}
+let A = { courts: {}, size: 0.15, nums: true };      // {courts:{anahtar:{c:[daire],cap:''}}, size}
 let hist = [], redo = [];
 let sel = { key: null, id: null };
 let clip = null;
@@ -366,8 +366,16 @@ function dotEl(c, key) {
   const col = COLORS[c.col] || COLORS.k;
   d.style.cssText = `left:${c.x * 100}%;top:${c.y * 100}%;color:${col};border-color:${col};border-width:max(2px, calc(var(--cw) * 0.022));` +
     (c.sh === 'o' ? `width:calc(${base} * 2);height:${base};` : `width:${base};height:${base};`) +
-    `font-size:calc(${base} * ${String(c.n).length > 1 ? 0.46 : 0.58});`;
-  d.textContent = c.n;
+    `font-size:calc(${base} * ${String(c.n).length > 1 ? 0.46 : 0.58});` +
+    (c.rot ? `transform:translate(-50%,-50%) rotate(${c.rot}deg);` : '');
+  if (A.nums !== false && String(c.n) !== '') {
+    const sp = document.createElement('span'); sp.className = 'dn'; sp.textContent = c.n;
+    if (c.rot) sp.style.transform = `rotate(${-c.rot}deg)`;
+    d.appendChild(sp);
+  }
+  if (c.sh === 'o' && sel.key === key && sel.id === c.id && !$('#lock').checked) {
+    const h = document.createElement('div'); h.className = 'rot-h'; h.title = 'Döndürmek için sürükleyin'; d.appendChild(h);
+  }
   return d;
 }
 
@@ -433,6 +441,10 @@ $('#stage').addEventListener('pointerdown', e => {
   if (!ct) { if (sel.key) clearSel(); return; }
   const key = ct.dataset.key; const dot = e.target.closest('.dot');
   const locked = $('#lock').checked;
+  if (e.target.closest('.rot-h') && dot && !locked) {
+    drag = { key, id: +dot.dataset.id, ct, rotate: true, moved: true, dotEl: dot, ang: null };
+    ct.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  }
   selectCourt(key);
   if (dot) {
     selectDot(key, +dot.dataset.id); refreshAll();
@@ -448,6 +460,14 @@ $('#stage').addEventListener('pointerdown', e => {
 });
 $('#stage').addEventListener('pointermove', e => {
   if (!drag) return;
+  if (drag.rotate) {
+    const r = drag.dotEl.getBoundingClientRect();
+    let a = Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI;
+    a = Math.round(a / 5) * 5; if (a === -180) a = 180; drag.ang = a;
+    drag.dotEl.style.transform = `translate(-50%,-50%) rotate(${a}deg)`;
+    const n = drag.dotEl.querySelector('.dn'); if (n) n.style.transform = `rotate(${-a}deg)`;
+    return;
+  }
   if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) drag.moved = true;
   if (drag.id != null && drag.moved) {
     const p = pointIn(drag.ct, e); drag.pos = p;
@@ -458,6 +478,7 @@ const endDrag = e => {
   if (!drag) return; const d = drag; drag = null;
   try { d.ct.releasePointerCapture(e.pointerId); } catch (_) { }
   if (e.type === 'pointercancel') { refreshAll(); return; }
+  if (d.rotate) { if (d.ang != null) mutate(() => { const c = (A.courts[d.key].c).find(c => c.id === d.id); if (c) c.rot = d.ang; }); return; }
   if (d.tap && !d.moved) {
     const p = pointIn(d.ct, e); if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) return;
     mutate(() => { const cd = court(d.key); const id = nextId(d.key); cd.c.push({ id, n: nextNo(d.key), x: +p.x.toFixed(4), y: +p.y.toFixed(4), col: 'k', sh: 'c' }); sel.key = d.key; sel.id = id; });
@@ -492,6 +513,7 @@ function updateTray() {
     $('#trNums').querySelectorAll('.chip').forEach(b => b.classList.toggle('on', String(c.n) === b.dataset.n));
     $('#trCols').querySelectorAll('.chip').forEach(b => b.classList.toggle('on', c.col === b.dataset.col));
     $('#trShape').classList.toggle('on', c.sh === 'o');
+    $('#trRot').hidden = c.sh !== 'o'; $('#trRotV').textContent = (c.rot || 0) + '°';
   }
   const cd = A.courts[sel.key];
   $('#trCap').value !== (cd?.cap || '') && document.activeElement !== $('#trCap') && ($('#trCap').value = cd?.cap || '');
@@ -502,6 +524,10 @@ $('#trNums').addEventListener('click', e => { const b = e.target.closest('[data-
 $('#trNumCustom').addEventListener('click', () => { const c = curDot(); if (!c) return; const v = prompt('Daire üzerinde ne yazsın? (en çok 3 karakter)', c.n); if (v != null && v.trim()) mutate(() => { c.n = v.trim().slice(0, 3); }); });
 $('#trCols').addEventListener('click', e => { const b = e.target.closest('[data-col]'); const c = curDot(); if (!b || !c) return; mutate(() => { c.col = b.dataset.col; }); });
 $('#trShape').addEventListener('click', () => { const c = curDot(); if (!c) return; mutate(() => { c.sh = c.sh === 'o' ? 'c' : 'o'; }); });
+$('#trRot').addEventListener('click', e => {
+  const b = e.target.closest('[data-rot]'); const c = curDot(); if (!b || !c) return;
+  mutate(() => { let a = b.dataset.rot === '0' ? 0 : (c.rot || 0) + (+b.dataset.rot); a = ((a + 180) % 360 + 360) % 360 - 180; c.rot = a === -180 ? 180 : a; });
+});
 $('#trDel').addEventListener('click', delDot);
 $('#trForm').addEventListener('change', e => {
   const f = FORMS[e.target.value]; e.target.value = ''; if (!f || !sel.key) return;
@@ -524,6 +550,7 @@ $('#btnUndo').addEventListener('click', undo);
 $('#btnRedo').addEventListener('click', redoIt);
 $('#btnNav').addEventListener('click', () => $('#nav').classList.toggle('hidden'));
 $('#lock').addEventListener('change', e => { document.body.classList.toggle('locked', e.target.checked); try { localStorage.setItem('defansLock', e.target.checked ? '1' : ''); } catch (_) { } });
+$('#showNums').addEventListener('change', e => { A.nums = e.target.checked; persist(); refreshAll(); });
 $('#size').addEventListener('change', e => { A.size = +e.target.value; persist(); refreshAll(); });
 $('#onlyMarked').addEventListener('change', e => { document.body.classList.toggle('only-marked', e.target.checked); try { localStorage.setItem('defansOnly', e.target.checked ? '1' : '0'); } catch (_) { } });
 $('#btnPrint').addEventListener('click', () => {
@@ -532,7 +559,7 @@ $('#btnPrint').addEventListener('click', () => {
   clearSel(); setTimeout(() => window.print(), 50);
 });
 $('#btnExport').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify({ app: 'vsm-defans', v: 1, size: A.size, courts: A.courts })], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'vsm-defans', v: 1, size: A.size, nums: A.nums !== false, courts: A.courts })], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'defans-plani-yedek.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
 $('#importIn').addEventListener('change', async e => {
@@ -540,7 +567,8 @@ $('#importIn').addEventListener('change', async e => {
   try {
     const j = JSON.parse(await f.text());
     if (j.app !== 'vsm-defans' || !j.courts) throw new Error();
-    mutate(() => { Object.assign(A.courts, j.courts); if (j.size) A.size = j.size; });
+    mutate(() => { Object.assign(A.courts, j.courts); if (j.size) A.size = j.size; if (typeof j.nums === 'boolean') A.nums = j.nums; });
+    $('#showNums').checked = A.nums !== false;
     $('#size').value = String(A.size); if (deck) buildNav(); toast('Yedek yüklendi.');
   } catch (_) { toast('Bu dosya bir Defans Planı yedeği değil.'); }
 });
@@ -568,8 +596,8 @@ document.addEventListener('drop', async e => { const f = [...(e.dataTransfer?.fi
   buildTray();
   if (innerWidth <= 900) $('#nav').classList.add('hidden');
   try { document.body.classList.toggle('only-marked', localStorage.getItem('defansOnly') !== '0'); $('#onlyMarked').checked = localStorage.getItem('defansOnly') !== '0'; if (localStorage.getItem('defansLock')) { $('#lock').checked = true; document.body.classList.add('locked'); } } catch (_) { document.body.classList.add('only-marked'); }
-  try { const saved = await idb.get('ann'); if (saved?.courts) A = { courts: saved.courts, size: saved.size || 0.15 }; } catch (_) { }
-  $('#size').value = String(A.size);
+  try { const saved = await idb.get('ann'); if (saved?.courts) A = { courts: saved.courts, size: saved.size || 0.15, nums: saved.nums !== false }; } catch (_) { }
+  $('#size').value = String(A.size); $('#showNums').checked = A.nums !== false;
   try { const d = await idb.get('deck'); if (d?.buf) await openDeck(d.buf, d.name, false); } catch (_) { }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
   window.__defans = { get deck() { return deck; }, get A() { return A; }, openDeck };

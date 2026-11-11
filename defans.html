@@ -26,6 +26,7 @@
     <button id="btnUndo" class="ghost" title="Geri al (Ctrl+Z)" aria-label="Geri al">↶ Geri al</button>
     <button id="btnRedo" class="ghost" title="Yinele (Ctrl+Y)" aria-label="Yinele">↷</button>
     <label class="chk" title="Açıkken dokunmak daire eklemez, sürüklemez"><input type="checkbox" id="lock"> Kilitle</label>
+    <label class="chk" title="Dairelerin içindeki numaraları göster/gizle"><input type="checkbox" id="showNums" checked> Numaralar</label>
     <label class="sel">Daire boyutu
       <select id="size"><option value="0.11">Küçük</option><option value="0.15" selected>Orta</option><option value="0.19">Büyük</option><option value="0.24">Çok büyük</option></select>
     </label>
@@ -64,6 +65,7 @@
     <button class="chip" id="trNumCustom" title="Başka numara ya da harf yaz">✎</button>
     <span class="seg" id="trCols"></span>
     <button class="chip" id="trShape" title="Daire / oval (iki oyuncu)">○ / ⬭</button>
+    <span class="seg" id="trRot" hidden><button class="chip" data-rot="-15" aria-label="15 derece sola">⟲</button><button class="chip" data-rot="0" title="Yatay">Yatay <small id="trRotV" style="margin-left:6px;opacity:.7">0°</small></button><button class="chip" data-rot="15" aria-label="15 derece sağa">⟳</button></span>
     <button class="chip danger" id="trDel">Sil</button>
   </div>
   <div class="tr-row">
