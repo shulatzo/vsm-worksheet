@@ -20,7 +20,7 @@ let store = {};
 try { store = JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { store = {}; }
 store.edits ||= {}; store.sel ||= {}; store.hidden ||= {};
 store.theme ||= 'light'; store.printTheme ||= 'light';
-store.minAtt ??= true; store.cardsPer ||= 3; store.minCard ||= 3; store.showServe ??= true; store.showHeat ??= false; store.myTeam ??= '';
+store.minAtt ??= true; store.cardsPer ||= 3; store.minCard ||= 3; store.showServe ??= true; store.view ||= 'zones'; store.myTeam ??= '';
 let saveTimer;
 const save = () => {
   clearTimeout(saveTimer);
@@ -138,7 +138,7 @@ function renderSide() {
   $('#cardsPer').value = String(store.cardsPer);
   $('#minCard').value = String(store.minCard);
   $('#showServe').checked = !!store.showServe;
-  $('#showHeat').checked = !!store.showHeat;
+  $('#courtView').value = store.view;
   $('#playerList').innerHTML = model ? model.players.map(p => `
     <li><input type="checkbox" data-pl="${p.no}" ${isSelected(p) ? 'checked' : ''} aria-label="#${p.no}">
       <span>#${String(p.no).padStart(2, '0')} ${esc(displayName(p.no))}</span><span class="n">${p.s.n}</span></li>`).join('') : '';
@@ -212,11 +212,11 @@ function lineupHTML() {
     </div>`;
 }
 
-const LEGEND = `
+const legendHTML = () => `
   <div class="legend" aria-label="Gösterge">
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><polygon points="11,2 2,16 22,16" fill="var(--accent)" opacity=".5"/></svg>Ana yön</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><line x1="3" y1="15" x2="17" y2="6" stroke="var(--alt)" stroke-width="3"/><polygon points="24,3 14,5 21,12" fill="var(--alt)"/></svg>Alternatif yön</div>
-    <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="2" y="2" width="22" height="14" fill="var(--accent)" opacity=".4"/></svg>Topun indiği bölge (kaç kez)</div>
+    <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true">${store.view === 'heat' ? '<defs><linearGradient id="lgh"><stop offset="0" stop-color="#8246C8" stop-opacity=".35"/><stop offset=".4" stop-color="#3CC846"/><stop offset=".75" stop-color="#FFD700"/><stop offset="1" stop-color="#FF3214"/></linearGradient></defs><rect x="2" y="3" width="22" height="12" fill="#F5C38B"/><rect x="2" y="3" width="22" height="12" fill="url(#lgh)"/>' : '<rect x="2" y="2" width="22" height="14" fill="var(--accent)" opacity=".4"/>'}</svg>${store.view === 'heat' ? 'Topun indiği yer (renk yoğunluğu)' : 'Topun indiği bölge (kaç kez)'}</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="2" y="2" width="22" height="14" fill="var(--start)" opacity=".45"/><circle cx="13" cy="9" r="5" fill="var(--card)" stroke="var(--start)" stroke-width="2"/></svg>Hücumun başladığı bölge</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><rect x="3" y="2" width="9" height="14" rx="2" fill="var(--block)"/><rect x="14" y="2" width="9" height="14" rx="2" fill="var(--block)"/></svg>Blok (B1/B2/B3)</div>
     <div><svg width="26" height="18" viewBox="0 0 26 18" aria-hidden="true"><ellipse cx="13" cy="9" rx="11" ry="7" fill="none" stroke="var(--ringA)" stroke-width="2.5"/></svg>Savunma A</div>
@@ -252,7 +252,7 @@ function renderSheet() {
     </div>
     </div>
     <div class="legendsec"><div class="tag">HÜCUM YÖNLERİ</div>
-    ${LEGEND}
+    ${legendHTML()}
     </div>
     ${chosen.map(playerHTML).join('')}
     ${servHTML()}
@@ -356,11 +356,10 @@ function playerHTML(pl) {
       <span class="tot">${s.n} vuruş · sayı %${pct(s.k, s.n)} · hata %${pct(s.e, s.n)}</span>
     </div>
     <div class="grid3">${combos.map(c => cardHTML(pl, c)).join('')}</div>
-    ${store.showHeat ? heatBlock(pl, combos) : ''}
   </section>`;
 }
 
-/* ───────── heatmap kartları (bölge / alt bölge verisinden) ───────── */
+/* ───────── heatmap görünümü: sahadaki iniş yoğunluğu (bölge / alt bölge verisinden) ───────── */
 const HM_N = 108;                       // ısı resminin kenarı (piksel), saha 9 m
 const HM_STOPS = [[0, [120, 60, 200, 0]], [0.06, [130, 70, 200, 0.30]], [0.18, [70, 110, 220, 0.55]], [0.33, [60, 200, 70, 0.9]], [0.55, [190, 230, 40, 0.95]], [0.75, [255, 215, 0, 0.98]], [1, [255, 50, 20, 1]]];
 const hmCache = new Map();
@@ -388,37 +387,6 @@ function heatURL(g) {
   }
   cx.putImageData(im, 0, 0);
   const url = cv.toDataURL('image/png'); hmCache.set(key, url); return url;
-}
-function heatCardHTML(c) {
-  const s = c.s, n = s.n, pc = v => Math.round(100 * v / n);
-  const hg = heatGrid(c.list);
-  const eff = pc(s.k - s.e - s.b);
-  const L = [['Tot:', n, 'E:', eff + '%'], ['Pts:', pc(s.k) + '%', 'Err:', pc(s.e) + '%']];
-  if (s.b) L.push(['', '', 'Blo:', pc(s.b) + '%']);
-  const hdr = L.map((r, i) => `<text class="hk" x="100" y="${12 + i * 11}">${r[0]}</text><text class="hv" x="152" y="${12 + i * 11}">${r[1]}</text><text class="hk" x="168" y="${12 + i * 11}">${r[2]}</text><text class="hv" x="236" y="${12 + i * 11}">${r[3]}</text>`).join('');
-  const Y0 = 38;                                              // saha çizim alanı üstü
-  const note = hg.n ? `Bölge işaretli ${hg.n}/${n} vuruş · alt bölge ${hg.nSub}` : 'Topun indiği bölge işaretli değil';
-  return `<figure class="hcard" title="${esc(note)}">
-    <svg viewBox="0 0 240 ${Y0 + 206}" role="img" aria-label="${esc(c.code)} iniş yoğunluğu">
-      <text class="hl1" x="4" y="22">${esc(c.code)}</text>${hdr}
-      <rect class="hblue" x="0" y="${Y0}" width="240" height="206"/>
-      <rect class="hcourt" x="30" y="${Y0 + 4}" width="180" height="180"/>
-      ${hg.n ? `<image href="${heatURL(hg.g)}" x="30" y="${Y0 + 4}" width="180" height="180" preserveAspectRatio="none" style="image-rendering:auto"/>` : ''}
-      <line class="hline" x1="26" y1="${Y0 + 64}" x2="214" y2="${Y0 + 64}"/>
-      <line class="hdot" x1="90" y1="${Y0 + 64}" x2="90" y2="${Y0 + 184}"/><line class="hdot" x1="150" y1="${Y0 + 64}" x2="150" y2="${Y0 + 184}"/><line class="hdot" x1="30" y1="${Y0 + 124}" x2="210" y2="${Y0 + 124}"/>
-      <rect class="hframe" x="30" y="${Y0 + 4}" width="180" height="180"/>
-      <line class="hline" x1="120" y1="${Y0 + 180}" x2="120" y2="${Y0 + 184}"/>
-    </svg>
-    <figcaption>${esc(c.name)}</figcaption>
-  </figure>`;
-}
-function heatBlock(pl, combos) {
-  const cs = combos.filter(c => c.s.n);
-  if (!cs.length) return '';
-  const allN = cs.reduce((a, c) => a + heatGrid(c.list).nSub, 0), allZ = cs.reduce((a, c) => a + heatGrid(c.list).n, 0);
-  return `<div class="heatsec"><div class="tag">HEATMAP · topun indiği bölge (bölge/alt bölge verisi)</div>
-    <div class="hgrid">${cs.map(heatCardHTML).join('')}</div>
-    <div class="hnote">Alt bölgesi işaretli vuruşlar tam yerine, işaretsizler bölgenin içine eşit yayıldı (${allN}/${allZ} vuruşta alt bölge var). Renk ölçeği sabit: 3 üst üste vuruş kırmızı.</div></div>`;
 }
 
 
@@ -501,8 +469,10 @@ function courtSVG(s, ed, no) {
 
   // Bizim saha: iniş yoğunluğu, ana yön, alternatif yön
   let heat = '', dirs = '';
+  const hm = store.view === 'heat';
   if (s.lN) {
-    heat = lz.map(([z, n]) => {
+    if (hm) heat = `<image href="${heatURL(s.hg.g)}" x="2" y="8" width="216" height="150" preserveAspectRatio="none"/>`;
+    else heat = lz.map(([z, n]) => {
       const g = ZONE_GRID[z]; if (!g) return '';
       const x = X(g[0] * 3), y = Y(g[1] * 3), w = 72, h = 150 / 3;
       const op = (0.15 + 0.5 * (n / lz[0][1])).toFixed(2);
@@ -525,9 +495,10 @@ function courtSVG(s, ed, no) {
   return `<svg class="court" viewBox="0 0 220 ${OFF + 162}" role="img" aria-label="Rakip hücum başlangıç bölgeleri ve bizim saha">
     ${opp}
     <g transform="translate(0 ${OFF})">
-      <rect class="bg" x="2" y="8" width="216" height="150"/><rect class="netr" x="2" y="2" width="216" height="6"/>
-      <line class="cl" x1="2" y1="${Y(3)}" x2="218" y2="${Y(3)}"/>
-      ${heat}${dirs}
+      <rect class="bg${hm ? ' hm' : ''}" x="2" y="8" width="216" height="150"/><rect class="netr" x="2" y="2" width="216" height="6"/>
+      ${hm ? `${heat}<line class="hdot" x1="${X(3)}" y1="${Y(3)}" x2="${X(3)}" y2="158"/><line class="hdot" x1="${X(6)}" y1="${Y(3)}" x2="${X(6)}" y2="158"/><line class="hdot" x1="2" y1="${Y(6)}" x2="218" y2="${Y(6)}"/><rect class="hframe" x="2" y="8" width="216" height="150"/>` : ''}
+      <line class="${hm ? 'hcl' : 'cl'}" x1="2" y1="${Y(3)}" x2="218" y2="${Y(3)}"/>
+      ${hm ? '' : heat}${dirs}
       <g class="toks">${ed.tokens.map(tokenSVG).join('')}</g>
     </g>
   </svg>`;
@@ -809,7 +780,7 @@ $('#playerList').addEventListener('change', e => {
 });
 $('#minAtt').addEventListener('change', e => { store.minAtt = e.target.checked; store.sel[teamCode] = {}; save(); renderSide(); renderSheet(); });
 $('#cardsPer').addEventListener('change', e => { store.cardsPer = +e.target.value; save(); renderSheet(); });
-$('#showHeat').addEventListener('change', e => { store.showHeat = e.target.checked; save(); renderSheet(); });
+$('#courtView').addEventListener('change', e => { store.view = e.target.value; save(); renderSheet(); });
 $('#showServe').addEventListener('change', e => { store.showServe = e.target.checked; save(); renderSheet(); });
 $('#minCard').addEventListener('change', e => { store.minCard = +e.target.value; save(); renderSheet(); });
 

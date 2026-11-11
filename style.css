@@ -240,19 +240,8 @@ svg.court { display:block; width:100%; height:auto; touch-action:none; user-sele
   [contenteditable]:empty:before { content:''; }
 }
 
-/* heatmap kartları */
-.heatsec { margin-top:12px; break-inside:avoid; }
-.hgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(215px,1fr)); gap:14px; margin-top:8px; }
-.hcard { margin:0; break-inside:avoid; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-.hcard svg { display:block; width:100%; height:auto; }
-.hcard figcaption { font-size:11.5px; color:var(--muted); margin-top:3px; }
-.hcard .hl1 { font:700 15px "Segoe UI", sans-serif; fill:#1B2A4A; }
-.hcard .hk { font:400 9.5px "Segoe UI", sans-serif; fill:#6B7898; text-anchor:start; }
-.hcard .hv { font:700 9.5px "Segoe UI", sans-serif; fill:#1B2A4A; text-anchor:end; }
-.hcard .hblue { fill:#3070BD; }
-.hcard .hcourt { fill:#F5C38B; }
-.hcard .hline { stroke:#fff; stroke-width:2; }
-.hcard .hdot { stroke:#fff; stroke-width:1; stroke-dasharray:2 2; opacity:.85; }
-.hcard .hframe { fill:none; stroke:#fff; stroke-width:1.6; }
-.hnote { font-size:11.5px; color:var(--muted); margin-top:6px; }
-@media print { .hnote { display:none; } .heatsec { margin-top:6px; } .player { padding-top:4px; } .ph .hn { line-height:1.3; } .hgrid { grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px; } .hcard figcaption { font-size:10px; } }
+/* heatmap görünümü (ana saha) */
+.court .bg.hm { fill:#F5C38B; }
+.court .hcl { stroke:#fff; stroke-width:2.5; }
+.court .hdot { stroke:#fff; stroke-width:1; stroke-dasharray:2 2; opacity:.85; }
+.court .hframe { fill:none; stroke:#fff; stroke-width:1.6; }

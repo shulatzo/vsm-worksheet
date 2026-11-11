@@ -109,6 +109,7 @@ export function summarize(list) {
     if (p.st === 'T') s.tip++;
     if (p.phase && s.phase[p.phase] != null) s.phase[p.phase]++;
   }
+  s.hg = heatGrid(list);
   return s;
 }
 

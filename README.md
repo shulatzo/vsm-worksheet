@@ -50,10 +50,9 @@ Heatmap sunumunun (.pptx) üzerine defans dairelerini yerleştirmek için ayrı 
 - Desteklenmeyenler (tablo, grafik, çizgi vb.) çizilemez; slayt başlığında uyarı çıkar, orijinalle karşılaştırın.
 - **PowerPoint (.pptx):** özgün sunumun kopyasına daireler/oval/notlar düzenlenebilir şekiller olarak eklenir (döndürme, numara, renk korunur); özgün dosya değişmez. Slaytlar silinmez, tümü çıkar.
 
-## Heatmap kartları (iniş yoğunluğu)
+## Saha görünümü: Bölge kutuları / Heatmap
 
-Ayarlarda "Heatmap kartlarını ekle" ile her oyuncunun kombinasyon kartlarının altına VolleyStation tarzı heatmap kartı eklenir (varsayılan kapalı).
-- Veri: topun indiği bölge (1–9) ve varsa alt bölge (A–D). Alt bölge işaretliyse o 1,5 m'lik hücreye, değilse bölgenin dört hücresine eşit yazılır. .vsm dosyalarında X/Y koordinatı yoktur; bu yüzden leke konumu bölge/alt bölge çözünürlüğündedir.
-- Dig kaydından türetilen iniş bölgeleri de (savunmacının kaydı) sayılır.
-- Üst satır: Tot, Pts % (sayı), Err % (hata), Blo % (bloke), E = (sayı − hata − bloke) / vuruş. Renk ölçeği sabit: 3 üst üste vuruş kırmızı.
-- Yön: ağ üstte, 4. bölge solda (kendi sahasından bakış), mevcut kartlarla aynı.
+Ayarlardaki "Saha görünümü" ile oyuncu kartlarındaki ana saha iki görünüm arasında değişir. Kartın geri kalanı (rakip yarı saha, ok yönleri, blok/savunma sembolleri, notlar) aynı kalır; yalnızca topun indiği yerin gösterimi değişir.
+- **Bölge kutuları:** 1–9 bölgelerinin vuruş sayısına göre boyalı kutuları (önceki görünüm).
+- **Heatmap:** VolleyStation tarzı yumuşak ısı lekeleri. Veri: topun indiği bölge ve varsa alt bölge; alt bölge işaretliyse o 1,5 m'lik hücreye, değilse bölgenin dört hücresine eşit yazılır (.vsm'de X/Y koordinatı yoktur). Dig kaydından türetilen iniş bölgeleri de sayılır. Renk ölçeği sabit: 3 üst üste vuruş kırmızı.
+- Servis kartları şimdilik her iki görünümde de bölge kutularıyla çizilir.
