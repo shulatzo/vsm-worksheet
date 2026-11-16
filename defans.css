@@ -138,3 +138,7 @@ body.locked .court { touch-action:auto; cursor:default; }
 .tr-code { display:inline-flex; gap:6px; align-items:center; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
 #trCode { width:64px; min-height:44px; text-align:center; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
 .chip[disabled] { cursor:default; }
+
+.danger-t { color:#B3261E; }
+.rs-p { font-size:13px; line-height:1.45; color:var(--muted); margin:10px 0 6px; }
+#rsPanel .chip { width:100%; justify-content:center; }

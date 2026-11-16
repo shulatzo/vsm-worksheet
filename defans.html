@@ -34,6 +34,7 @@
       <select id="cols"><option value="2">2 kart</option><option value="3">3 kart</option><option value="4" selected>4 kart</option><option value="5">5 kart</option></select>
     </label>
     <button id="btnRestore" class="ghost" title="Kaldırdığınız kartları ve oyuncuları geri getirin" hidden>Kaldırılanlar (<span id="nRem">0</span>)</button>
+    <button id="btnReset" class="ghost danger-t" title="Daireleri baştan yerleştir ya da her şeyi sil">Sıfırla</button>
     <button id="btnPrint" class="btn">Yazdır / PDF</button>
     <button id="btnPptx" class="btn" title="Oyuncu başına bir slayt; daireler düzenlenebilir şekiller olarak eklenir">PowerPoint (.pptx)</button>
     <button id="btnExport" class="ghost" title="Daireleri, kart seçimlerini ve fotoğrafları dosya olarak kaydet">Yedekle</button>
@@ -88,6 +89,15 @@
 </div>
 
 <div id="rmPanel" class="rmpanel" hidden></div>
+<div id="rsPanel" class="rmpanel" hidden>
+  <h3>Sıfırla</h3>
+  <p class="rs-p"><b>Daireleri baştan yerleştir:</b> tüm daireler ve notlar silinir, kodu tanınan kartlara referans daireleri yeniden konur. Kaldırdığınız kartlar, adlar ve fotoğraflar kalır. Geri al ile dönülebilir.</p>
+  <button class="chip" id="rsCircles">Daireleri baştan yerleştir</button>
+  <p class="rs-p"><b>Her şeyi sil:</b> PDF, kartlar, daireler, adlar ve fotoğraflar tarayıcıdan silinir; sayfa ilk açılış haline döner. Geri alınamaz; gerekirse önce Yedekle’ye basın.</p>
+  <label class="chk"><input type="checkbox" id="rsRefs"> Kayıtlı referanslarımı da sil (“Referans yap” ile kaydettiklerim)</label>
+  <button class="chip danger" id="rsAll">Her şeyi sil</button>
+  <p class="rs-p"><button class="chip" id="rsClose">Vazgeç</button></p>
+</div>
 
 <script src="vendor/jszip.min.js"></script>
 <script src="vendor/pdf.min.js"></script>

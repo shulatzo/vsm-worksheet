@@ -377,7 +377,7 @@ const visPanels = p => p.panels.filter(c => !pst(p.id).hid[c.key]);
 function renderPlayers() {
   const host = $('#players'); host.innerHTML = '';
   for (const k in courtEls) delete courtEls[k];
-  if (!deck) return;
+  if (!deck) { buildNav(); refreshAll(); return; }
   deck.players.forEach((p, pi) => {
     const st = pst(p.id); if (st.off) return;
     const sec = document.createElement('section'); sec.className = 'player'; sec.id = 'pl' + pi; sec.dataset.pid = p.id;
@@ -707,7 +707,7 @@ $('#players').addEventListener('focusout', e => {
 $('#players').addEventListener('keydown', e => { if (e.target.dataset?.act === 'name' && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
 
 /* Kaldırılanlar paneli */
-$('#btnRestore').addEventListener('click', () => { const r = removedList(); if (!r.length) return; const p = $('#rmPanel'); p.hidden = !p.hidden; if (!p.hidden) renderRemoved(); });
+$('#btnRestore').addEventListener('click', () => { $('#rsPanel').hidden = true; const r = removedList(); if (!r.length) return; const p = $('#rmPanel'); p.hidden = !p.hidden; if (!p.hidden) renderRemoved(); });
 function renderRemoved() {
   const p = $('#rmPanel'); const r = removedList();
   p.innerHTML = `<h3>Kaldırılanlar</h3>` + r.map((x, i) => x.kind === 'card'
@@ -815,6 +815,29 @@ $('#btnPptx').addEventListener('click', async () => {
     toast(`PowerPoint hazır: ${r.slides} slayt, ${r.dots} daire${r.caps ? ', ' + r.caps + ' not' : ''}.`, 5000);
   } catch (err) { console.error(err); toast('PowerPoint oluşturulamadı: ' + (err.message || err)); }
   finally { btn.disabled = false; }
+});
+
+
+/* ——— sıfırlama ——— */
+$('#btnReset').addEventListener('click', () => { $('#rmPanel').hidden = true; const p = $('#rsPanel'); p.hidden = !p.hidden; $('#rsCircles').disabled = !deck; });
+$('#rsClose').addEventListener('click', () => { $('#rsPanel').hidden = true; });
+$('#rsCircles').addEventListener('click', () => {
+  if (!deck) return;
+  if (!confirm('Tüm daireler ve notlar silinip referans daireleri baştan yerleştirilsin mi? (Geri al ile dönebilirsiniz.)')) return;
+  let ap; mutate(() => { S.courts = {}; S.codes = {}; sel = { key: null, id: null }; ap = autoPlace(deck); });
+  $('#rsPanel').hidden = true; toast(`Baştan yerleştirildi: ${ap.cards} karta referans daireleri konuldu.`);
+});
+$('#rsAll').addEventListener('click', async () => {
+  if (!confirm('PDF, kartlar, daireler, adlar ve fotoğraflar bu tarayıcıdan silinecek. Geri alınamaz. Devam edilsin mi?')) return;
+  const keepRefs = !$('#rsRefs').checked, refs = keepRefs ? S.refs : {};
+  deck?.players.forEach(p => p.panels.forEach(c => URL.revokeObjectURL(c.url)));
+  for (const id in photos) { if (photos[id].url) URL.revokeObjectURL(photos[id].url); delete photos[id]; }
+  deck = null; hist = []; redo = []; sel = { key: null, id: null }; clip = null;
+  S = { courts: {}, size: 0.17, nums: false, cols: 4, pl: {}, refs, codes: {} };
+  try { await idb.set('st2', S); await idb.set('deck2', null); await idb.set('photos', {}); } catch (_) { }
+  $('#rsPanel').hidden = true; $('#rmPanel').hidden = true;
+  syncControls(); renderPlayers(); $('#empty').hidden = false; document.title = 'Defans Planı · VSM Worksheet';
+  toast('Sıfırlandı. Yeni bir heatmap PDF’i açabilirsiniz.');
 });
 
 /* ——— açılış ——— */
