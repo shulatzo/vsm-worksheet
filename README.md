@@ -41,14 +41,17 @@ Uygulama dosyalarını değiştirdiğinizde `sw.js` içindeki `CACHE` adını ar
 
 ## Defans Planı (`defans.html`)
 
-Heatmap sunumunun (.pptx) üzerine defans dairelerini yerleştirmek için ayrı bir sayfa. Ana uygulamadaki "Defans planı" düğmesinden açılır.
+VolleyStation'ın heatmap PDF'inden oyuncu sayfaları üretip üzerlerine defans dairelerini yerleştirmek için ayrı bir sayfa. Ana uygulamadaki "Defans planı" düğmesinden açılır.
 
-- .pptx tarayıcıda açılır (JSZip, `vendor/`), slaytlar sunumdaki konumlarıyla çizilir. Heatmap görsellerine dokunulmaz; daireler ayrı katmandır.
-- Her görseldeki turuncu saha alanı otomatik bulunur; daireler saha koordinatında (0–1) saklanır ve görselin SHA-1 özetine bağlıdır. Sunum güncellenip görsel aynı kalırsa daireler yerinde durur.
-- Sahaya dokun = daire ekle, sürükle = taşı. Alt çubuk: numara, renk, daire/oval, sil, formasyon, kopyala/yapıştır, alt şerit notu (RIGHT TO RIGHT vb.).
-- Otomatik kaydedilir (IndexedDB), Yedekle/Geri yükle ile dosyaya alınır. Yazdır / PDF: slayt boyutunda sayfa, istenirse yalnız işaretli slaytlar.
-- Desteklenmeyenler (tablo, grafik, çizgi vb.) çizilemez; slayt başlığında uyarı çıkar, orijinalle karşılaştırın.
-- **PowerPoint (.pptx):** özgün sunumun kopyasına daireler/oval/notlar düzenlenebilir şekiller olarak eklenir (döndürme, numara, renk korunur); özgün dosya değişmez. Slaytlar silinmez, tümü çıkar.
+- **PDF açma:** `Heatmap PDF'i aç` (pdf.js, `vendor/`, tarayıcıda çalışır, dosya hiçbir yere gönderilmez). Her sayfa bir oyuncu sayfası olur; sayfadaki heatmap'ler (turuncu saha + mavi çerçeve + üstteki istatistik şeridi) ayrı kartlara bölünür. Aynı adlı ardışık sayfalar tek oyuncuda birleşir. Oyuncu adı sayfadaki en büyük yazıdan alınır; ad tıklanıp değiştirilir, sayfadaki diğer yazılar "Ad seç…" listesinde çıkar.
+- **Kart kaldırma:** kartın köşesindeki ✕; oyuncu için "Oyuncuyu kaldır". Kaldırılanlar "Kaldırılanlar" panelinden geri gelir. Geri al/yinele hepsini kapsar.
+- **Fotoğraf:** oyuncu adının üstünde; boyut kaydırıcısı (mm). "Arka planı temizle": renk tabanlı (yapay zekâ değil) otomatik temizleme + tıkla-sil + sil/geri getir fırçası. Zemin rengi kenarın en az 3 kenarında görülen baskın renk sayılır; nesneyle zemin arasındaki keskin kenarlar aşılmaz. Zemin ile nesne aynı renkteyse (beyaz forma/beyaz duvar) fırçayla düzeltilir. "Arka planı geri getir" orijinale döner.
+- **Atak koduna göre başlangıç daireleri:** kartın sol üstündeki kod (C1, XS, PP …) önce PDF'in metin katmanından, yoksa etiketin görsel parmak iziyle (`defans-refs.js`) okunur. Kod tanınıyorsa, daha önce dokunulmamış kartlara o kodun referans daireleri konur. Yerleşik referans, MER NOS sunumundaki elle yerleştirilmiş 21 karttan çıkarıldı (kod başına en tipik yerleşim). Alt çubukta kartın kodu düzeltilebilir; **Referans yap** o kartın dairelerini kodun yeni referansı yapar (yedeğe girer), **Referansı uygula** kartı referansa döndürür.
+- Daireler saha (turuncu alan) koordinatında (0–1) saklanır; PDF'in özeti + sayfa + kart sırasına bağlıdır, aynı PDF yeniden açılırsa yerinde durur.
+- Sahaya dokun = daire ekle, sürükle = taşı, oval dairede döndürme tutamacı. Alt çubuk: numara, renk, daire/oval, sil, formasyon, kopyala/yapıştır, alt şerit notu (RIGHT TO RIGHT vb.). Numaralar varsayılan olarak kapalıdır.
+- Otomatik kaydedilir (IndexedDB: PDF kartları, daireler, fotoğraflar). Yedekle/Geri yükle ile dosyaya alınır (fotoğraflar dahil).
+- **Yazdır / PDF:** A4 yatay, oyuncu başına bir sayfa; "Sırada" ile kart sayısı 2–5. **PowerPoint (.pptx):** oyuncu başına slayt (kartlar 2 satırı aşarsa devam slaytı); fotoğraf ve kartlar görsel, daireler/oval/notlar düzenlenebilir şekiller.
+- Kapsam: kart tespiti VolleyStation'ın heatmap görünümüne (turuncu saha, mavi çerçeve) dayanır; farklı bir görünümde kart bulunamazsa sayfa uyarı verir.
 
 ## Saha görünümü: Bölge kutuları / Heatmap
 

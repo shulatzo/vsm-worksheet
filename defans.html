@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Defans Planı · VSM Worksheet</title>
-<meta name="description" content="Sunumdaki heatmap görsellerinin üzerine defans dairelerini yerleştirin, PDF alın.">
+<meta name="description" content="VolleyStation heatmap PDF'ini açın, oyuncu sayfalarındaki sahalara defans dairelerini yerleştirin, PDF alın.">
 <meta name="theme-color" content="#0B1220">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -16,46 +16,49 @@
 
 <header class="bar" id="topbar">
   <div class="bar-left">
-    <button id="btnNav" class="ghost" aria-label="Slayt listesini göster/gizle">☰ Slaytlar</button>
+    <button id="btnNav" class="ghost" aria-label="Oyuncu listesini göster/gizle">☰ Oyuncular</button>
     <div class="brand">Defans <b>Planı</b></div>
     <a class="ghost btn-l" href="./">← Rakip analizi</a>
   </div>
   <div class="bar-actions">
-    <label class="btn" for="pptIn">.pptx aç</label>
-    <input id="pptIn" type="file" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden>
+    <label class="btn" for="pdfIn">Heatmap PDF’i aç</label>
+    <input id="pdfIn" type="file" accept=".pdf,application/pdf" hidden>
     <button id="btnUndo" class="ghost" title="Geri al (Ctrl+Z)" aria-label="Geri al">↶ Geri al</button>
     <button id="btnRedo" class="ghost" title="Yinele (Ctrl+Y)" aria-label="Yinele">↷</button>
     <label class="chk" title="Açıkken dokunmak daire eklemez, sürüklemez"><input type="checkbox" id="lock"> Kilitle</label>
-    <label class="chk" title="Dairelerin içindeki numaraları göster/gizle"><input type="checkbox" id="showNums" checked> Numaralar</label>
-    <label class="sel">Daire boyutu
-      <select id="size"><option value="0.11">Küçük</option><option value="0.15" selected>Orta</option><option value="0.19">Büyük</option><option value="0.24">Çok büyük</option></select>
+    <label class="chk" title="Dairelerin içindeki numaraları göster/gizle"><input type="checkbox" id="showNums"> Numaralar</label>
+    <label class="sel">Daire
+      <select id="size"><option value="0.12">Küçük</option><option value="0.17" selected>Orta</option><option value="0.21">Büyük</option><option value="0.26">Çok büyük</option></select>
     </label>
-    <label class="chk" title="PDF'e yalnızca daire ya da etiket konmuş slaytlar girsin"><input type="checkbox" id="onlyMarked" checked> PDF: yalnız işaretliler</label>
+    <label class="sel">Sırada
+      <select id="cols"><option value="2">2 kart</option><option value="3">3 kart</option><option value="4" selected>4 kart</option><option value="5">5 kart</option></select>
+    </label>
+    <button id="btnRestore" class="ghost" title="Kaldırdığınız kartları ve oyuncuları geri getirin" hidden>Kaldırılanlar (<span id="nRem">0</span>)</button>
     <button id="btnPrint" class="btn">Yazdır / PDF</button>
-    <button id="btnPptx" class="btn" title="Daireler düzenlenebilir şekiller olarak sunuma eklenir">PowerPoint (.pptx)</button>
-    <button id="btnExport" class="ghost" title="Daireleri dosya olarak kaydet">Yedekle</button>
+    <button id="btnPptx" class="btn" title="Oyuncu başına bir slayt; daireler düzenlenebilir şekiller olarak eklenir">PowerPoint (.pptx)</button>
+    <button id="btnExport" class="ghost" title="Daireleri, kart seçimlerini ve fotoğrafları dosya olarak kaydet">Yedekle</button>
     <label class="ghost btn-l" for="importIn" title="Yedek dosyasını yükle">Geri yükle</label>
     <input id="importIn" type="file" accept=".json,application/json" hidden>
   </div>
 </header>
 
 <div class="dlayout">
-  <nav id="nav" class="dnav" aria-label="Slaytlar"></nav>
+  <nav id="nav" class="dnav" aria-label="Oyuncular"></nav>
   <main id="stage" class="stage">
     <div id="empty" class="dempty">
       <h1>Defans Planı</h1>
-      <p>Heatmap sunumunuzu (.pptx) açın. Slaytlar sunumdaki yerleşimle aynen gösterilir; heatmap görsellerine <b>hiç dokunulmaz</b>, daireler üstlerine ayrı bir katman olarak konur.</p>
-      <label class="btn big" for="pptIn">.pptx aç</label>
-      <div id="drop" class="drop" tabindex="0">ya da dosyayı buraya bırakın</div>
+      <p>VolleyStation’dan aldığınız <b>heatmaps PDF’ini</b> açın. Her sayfadaki heatmap’ler kart olarak ayrılır, oyuncu başına bir sayfa oluşur. İstemediğiniz kartı <b>✕</b> ile kaldırırsınız; heatmap görsellerine hiç dokunulmaz, daireler üstlerine ayrı bir katman olarak konur.</p>
+      <label class="btn big" for="pdfIn">Heatmap PDF’i aç</label>
+      <div id="drop" class="drop" tabindex="0">ya da PDF’i buraya bırakın</div>
       <ul class="how">
         <li>Sahanın üzerine <b>dokunun</b>: daire eklenir (1’den 6’ya sırayla numaralanır).</li>
-        <li>Daireyi <b>sürükleyin</b>: konumu değişir. Daireye dokununca alttaki çubuktan numara, renk, oval/daire ve silme çıkar.</li>
-        <li>Çubuktaki <b>Formasyon</b> ile 6 daireyi tek dokunuşta yerleştirip sonra düzeltebilirsiniz; <b>Kopyala / Yapıştır</b> ile bir sahadaki dizilişi başka sahaya aktarırsınız.</li>
-        <li><b>RIGHT TO RIGHT</b> gibi notlar heatmap’in alt mavi şeridine yazılır.</li>
-        <li>Her şey otomatik kaydedilir. Sunumu sonradan güncellerseniz, görseli değişmeyen heatmap’lerin daireleri yerinde kalır.</li>
+        <li>Daireyi <b>sürükleyin</b>: konumu değişir. Daireye dokununca alttaki çubuktan numara, renk, oval/daire, döndürme ve silme çıkar.</li>
+        <li>Oyuncu adının üstündeki alana <b>fotoğraf</b> ekleyin, boyutunu kaydırıcıyla ayarlayın; <b>Arka planı temizle</b> ile fotoğrafın zeminini silin.</li>
+        <li>Çubuktaki <b>Formasyon</b> ile 6 daireyi tek dokunuşta yerleştirip düzeltebilir, <b>Kopyala / Yapıştır</b> ile dizilişi başka sahaya aktarabilirsiniz.</li>
+        <li><b>RIGHT TO RIGHT</b> gibi notlar heatmap’in altındaki mavi şeride yazılır. Her şey otomatik kaydedilir.</li>
       </ul>
     </div>
-    <div id="slides"></div>
+    <div id="players"></div>
   </main>
 </div>
 
@@ -75,13 +78,22 @@
     <button class="chip" id="trCopy">Kopyala</button>
     <button class="chip" id="trPaste">Yapıştır</button>
     <button class="chip danger" id="trClear">Daireleri temizle</button>
+    <label class="tr-code" title="Kartın atak kodu (XS, C1, PP …). Etiketten otomatik okunur; yanlışsa buradan düzeltin.">Kod <input id="trCode" type="text" maxlength="3" placeholder="—" aria-label="Atak kodu" autocomplete="off" autocapitalize="characters"></label>
+    <button class="chip" id="trRef" title="Bu kartın dairelerini, bu kodlu kartlar için başlangıç yerleşimi yap">Referans yap</button>
+    <button class="chip" id="trApplyRef" title="Bu kartın dairelerini kodun referansıyla değiştir">Referansı uygula</button>
     <span class="tr-sep"></span>
     <span class="seg" id="trCaps"></span>
     <input id="trCap" type="text" placeholder="Not (alt şeride yazılır)" maxlength="40" aria-label="Saha notu">
   </div>
 </div>
 
+<div id="rmPanel" class="rmpanel" hidden></div>
+
 <script src="vendor/jszip.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script src="defans-refs.js"></script>
+<script src="defans-bg.js"></script>
+<script src="defans-pptx.js"></script>
 <script src="defans.js"></script>
 </body>
 </html>
