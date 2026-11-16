@@ -372,7 +372,12 @@ function photoURL(pid) {
   if (ph._src !== b) { if (ph.url) URL.revokeObjectURL(ph.url); ph.url = URL.createObjectURL(b); ph._src = b; }
   return ph.url;
 }
-const visPanels = p => p.panels.filter(c => !pst(p.id).hid[c.key]);
+const visPanels = p => {
+  const st = pst(p.id), list = p.panels.filter(c => !st.hid[c.key]), ord = st.order;
+  if (!ord?.length) return list;
+  const idx = k => { const i = ord.indexOf(k); return i < 0 ? 1e6 + p.panels.findIndex(c => c.key === k) : i; };
+  return list.slice().sort((a, b) => idx(a.key) - idx(b.key));
+};
 
 function renderPlayers() {
   const host = $('#players'); host.innerHTML = '';
@@ -410,6 +415,7 @@ function cardEl(c) {
   const f = document.createElement('figure'); f.className = 'pcard'; f.dataset.key = c.key;
   const x = document.createElement('button'); x.className = 'x'; x.type = 'button'; x.title = 'Bu kartı kaldır'; x.setAttribute('aria-label', 'Kartı kaldır'); x.textContent = '✕'; x.dataset.act = 'rmcard';
   f.appendChild(x);
+  const hd = document.createElement('button'); hd.className = 'drag'; hd.type = 'button'; hd.title = 'Sürükleyerek sırayı değiştir'; hd.setAttribute('aria-label', 'Kartı taşı'); hd.textContent = '⠿'; f.appendChild(hd);
   const fig = document.createElement('div'); fig.className = 'pfig';
   const img = document.createElement('img'); img.src = c.url; img.alt = ''; img.width = c.w; img.height = c.h; fig.appendChild(img);
   const ct = c.court;
@@ -705,6 +711,37 @@ $('#players').addEventListener('focusout', e => {
   if (v !== nameOf(p)) { mutate(() => { pst(pid).name = v; }); buildNav(); refreshAll(); }
 });
 $('#players').addEventListener('keydown', e => { if (e.target.dataset?.act === 'name' && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+
+
+/* ——— kartları sürükleyip sıralama (oyuncu sayfası içinde) ——— */
+let cdrag = null;
+$('#players').addEventListener('pointerdown', e => {
+  const h = e.target.closest('.drag'); if (!h) return;
+  const card = h.closest('.pcard'), grid = card.parentElement;
+  cdrag = { card, grid, pid: pidOf(card), moved: false }; card.classList.add('dragging');
+  h.setPointerCapture(e.pointerId); e.preventDefault();
+});
+$('#players').addEventListener('pointermove', e => {
+  if (!cdrag) return;
+  const { card, grid } = cdrag;
+  card.style.pointerEvents = 'none';
+  const under = document.elementFromPoint(e.clientX, e.clientY)?.closest('.pcard');
+  card.style.pointerEvents = '';
+  if (!under || under === card || under.parentElement !== grid) return;
+  const r = under.getBoundingClientRect();
+  const before = (e.clientX - r.left) / r.width < 0.5;
+  const sibling = before ? under : under.nextSibling;
+  if (sibling !== card && sibling !== card.nextSibling) { grid.insertBefore(card, sibling); cdrag.moved = true; }
+});
+const endCardDrag = e => {
+  if (!cdrag) return; const d = cdrag; cdrag = null; d.card.classList.remove('dragging');
+  if (e.type === 'pointercancel') { renderPlayers(); return; }
+  if (!d.moved) return;
+  const keys = [...d.grid.querySelectorAll('.pcard')].map(c => c.dataset.key);
+  mutate(() => { pst(d.pid).order = keys; });
+};
+$('#players').addEventListener('pointerup', endCardDrag);
+$('#players').addEventListener('pointercancel', endCardDrag);
 
 /* Kaldırılanlar paneli */
 $('#btnRestore').addEventListener('click', () => { $('#rsPanel').hidden = true; const r = removedList(); if (!r.length) return; const p = $('#rmPanel'); p.hidden = !p.hidden; if (!p.hidden) renderRemoved(); });
