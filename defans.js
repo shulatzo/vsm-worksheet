@@ -105,7 +105,7 @@ function detectPanels(cv) {
       }
     }
   }
-  boxes = boxes.filter(b => { const w = b.x1 - b.x0, h = b.y1 - b.y0; return w >= 40 && h >= 30 && w / h > 0.6 && w / h < 1.7; });
+  boxes = boxes.filter(b => { const w = b.x1 - b.x0, h = b.y1 - b.y0; return w >= 40 && h >= 30 && w / h > 0.35 && w / h < 1.7; });
 
   const blue = i => d[i + 2] - d[i] > 55 && d[i + 2] > 120 && d[i + 2] - d[i + 1] > 15;
   const colBlue = (x, ya, yb) => { let n = 0, t = 0; for (let y = Math.max(0, ya); y <= Math.min(H - 1, yb); y += 2) { t++; if (blue((y * W + x) * 4)) n++; } return t ? n / t : 0; };
@@ -188,6 +188,19 @@ function textCandidates(items, vp, boxes) {
   return res.map(l => l.t).filter((t, i, a) => a.indexOf(t) === i).slice(0, 8);
 }
 
+
+/* VolleyStation raporunun başlık sayfası: "Players  3 ERTEK" satırı. Bulunursa oyuncu adı döner. */
+function playersFromHeader(items, vp) {
+  const its = items.map(it => { const t = pdfjsLib.Util.transform(vp.transform, it.transform); return { s: (it.str || '').trim(), x: t[4], y: t[5], w: (it.width || 0) * vp.scale }; }).filter(i => i.s);
+  const k = its.find(i => /^Players?$/i.test(i.s));
+  if (!k) return null;
+  const same = its.filter(i => i !== k && Math.abs(i.y - k.y) < 3 && i.x > k.x).sort((a, b) => a.x - b.x);
+  let txt = '', end = null;
+  for (const p of same) { if (end != null && p.x - end > 2 && !/\s$/.test(txt)) txt += ' '; txt += p.s; end = p.x + p.w; }
+  txt = txt.replace(/\s+/g, ' ').trim();
+  return txt || null;
+}
+
 async function parsePdf(buf, name) {
   if (!window.pdfjsLib) throw new Error('PDF okuyucu yüklenemedi (vendor/pdf.min.js).');
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
@@ -196,7 +209,7 @@ async function parsePdf(buf, name) {
   let pdf;
   try { pdf = await pdfjsLib.getDocument({ data: bytes.slice() }).promise; }
   catch (e) { throw new Error('Bu dosya okunamadı. Geçerli bir PDF mi?'); }
-  const players = []; const warns = [];
+  const players = [], pages = []; const warns = [];
   for (let pn = 1; pn <= pdf.numPages; pn++) {
     prog(`PDF okunuyor… sayfa ${pn}/${pdf.numPages}`);
     const page = await pdf.getPage(pn);
@@ -206,21 +219,41 @@ async function parsePdf(buf, name) {
     const g = cv.getContext('2d', { willReadFrequently: true }); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
     await page.render({ canvasContext: g, viewport: vp }).promise;
     const found = detectPanels(cv);
+    const d3 = found.length ? g.getImageData(0, 0, cv.width, cv.height).data : null;
     let cands = [], tcItems = [];
     try { const tc = await page.getTextContent(); tcItems = tc.items; cands = textCandidates(tc.items, vp, found.map(f => ({ x0: f.hx0, y0: f.strip, x1: f.hx1, y1: f.blue.y1 }))); } catch (_) { }
     const panels = [];
     for (let i = 0; i < found.length; i++) {
       const f = found[i];
-      const bx0 = Math.max(0, f.hx0 - 3), by0 = Math.max(0, f.strip - 3), bx1 = Math.min(cv.width, f.hx1 + 3), by1 = Math.min(cv.height, f.blue.y1 + 3);
-      const w = bx1 - bx0, h = by1 - by0;
-      const c2 = document.createElement('canvas'); c2.width = w; c2.height = h;
-      c2.getContext('2d').drawImage(cv, bx0, by0, w, h, 0, 0, w, h);
+      const full = f.ch / f.cw > 1.4;           // VolleyStation'ın tam saha görünümü: file ortada, iki yarı
+      let c2, courtRel, btRel;
+      if (!full) {
+        const bx0 = Math.max(0, f.hx0 - 3), by0 = Math.max(0, f.strip - 3), bx1 = Math.min(cv.width, f.hx1 + 3), by1 = Math.min(cv.height, f.blue.y1 + 3);
+        const w = bx1 - bx0, h = by1 - by0;
+        c2 = document.createElement('canvas'); c2.width = w; c2.height = h;
+        c2.getContext('2d').drawImage(cv, bx0, by0, w, h, 0, 0, w, h);
+        courtRel = { x0: (f.court.x0 - bx0) / w, y0: (f.court.y0 - by0) / h, x1: (f.court.x1 - bx0) / w, y1: (f.court.y1 - by0) / h }; btRel = (f.blue.y0 - by0) / h;
+      } else {
+        // alt yarı: şerit (kod + istatistik) + ince mavi üst bant + file çizgisinin altındaki yarı saha
+        const cw = f.court.x1 - f.court.x0, mid = Math.round((f.court.y0 + f.court.y1) / 2);
+        const white = y => { let n = 0, t = 0; for (let x = f.court.x0 + Math.round(cw * 0.15); x < f.court.x1 - Math.round(cw * 0.15); x += 2) { const q = (y * cv.width + x) * 4; t++; if (d3[q] > 235 && d3[q + 1] > 235 && d3[q + 2] > 235) n++; } return n / t > 0.7; };
+        let h0 = mid; for (let y = mid - 8; y <= mid + 10; y++) if (white(y)) h0 = y + 1;
+        const sx0 = Math.max(0, f.hx0 - 3), sx1 = Math.min(cv.width, f.hx1 + 3), w = sx1 - sx0;
+        const sTop = Math.max(0, f.strip - 3), stripH = Math.max(0, f.blue.y0 - sTop), band = Math.round(cw * 0.035);
+        const by1 = Math.min(cv.height, f.blue.y1 + 3), lowH = by1 - h0, h = stripH + band + lowH;
+        c2 = document.createElement('canvas'); c2.width = w; c2.height = h;
+        const g2 = c2.getContext('2d'); g2.fillStyle = '#fff'; g2.fillRect(0, 0, w, h);
+        if (stripH > 0) g2.drawImage(cv, sx0, sTop, w, stripH, 0, 0, w, stripH);
+        const bp = (Math.round(h0 + 6) * cv.width + f.blue.x0 + 3) * 4;
+        g2.fillStyle = `rgb(${d3[bp]},${d3[bp + 1]},${d3[bp + 2]})`; g2.fillRect(f.blue.x0 - sx0, stripH, f.blue.x1 - f.blue.x0, band + 1);
+        g2.drawImage(cv, sx0, h0, w, lowH, 0, stripH + band, w, lowH);
+        courtRel = { x0: (f.court.x0 - sx0) / w, y0: (stripH + band) / h, x1: (f.court.x1 - sx0) / w, y1: (stripH + band + (f.court.y1 - h0)) / h }; btRel = stripH / h;
+      }
+      const w = c2.width, h = c2.height;
       const blob = await toBlob(c2);
-      panels.push({ key: `${fp}:${pn}:${i + 1}`, blob, url: URL.createObjectURL(blob), w, h, bt: (f.blue.y0 - by0) / h,
-        court: { x0: (f.court.x0 - bx0) / w, y0: (f.court.y0 - by0) / h, x1: (f.court.x1 - bx0) / w, y1: (f.court.y1 - by0) / h } });
+      panels.push({ key: `${fp}:${pn}:${i + 1}`, blob, url: URL.createObjectURL(blob), w, h, bt: btRel, court: courtRel, half: full });
     }
     cv.width = cv.height = 1;
-    if (!panels.length) warns.push(`Sayfa ${pn}: heatmap bulunamadı`);
     // atak kodu: önce metin katmanı (2 harf/rakam, kartın sol üstünde), yoksa etiket görselinin parmak izi
     for (let i = 0; i < panels.length; i++) {
       const f = found[i], c = panels[i];
@@ -233,10 +266,22 @@ async function parsePdf(buf, name) {
       if (!code) { try { code = matchCode(await labelSig(c), window.DEFANS_REFS); } catch (_) { } }
       c.code = code || '';
     }
-    const nm = cands[0] || '';
-    const prev = players[players.length - 1];
-    if (prev && nm && prev.name === nm) prev.panels.push(...panels);      // aynı oyuncunun devam sayfası
-    else players.push({ id: `${fp}:p${pn}`, name: nm, cands, page: pn, panels });
+    pages.push({ pn, hdr: playersFromHeader(tcItems, vp), cands, panels });
+  }
+  // oyuncuları kur: VolleyStation raporunda her oyuncu "Players …" filtreli bir başlık sayfasıyla başlar;
+  // bu yoksa her sayfa bir oyuncudur (aynı adlı ardışık sayfalar birleşir).
+  const report = pages.some(p => p.hdr);
+  for (const pg of pages) {
+    if (report) {
+      if (pg.hdr) players.push({ id: `${fp}:p${pg.pn}`, name: pg.hdr, cands: [], page: pg.pn, panels: [] });
+      else if (!players.length) players.push({ id: `${fp}:p${pg.pn}`, name: '', cands: pg.cands, page: pg.pn, panels: [] });
+      players[players.length - 1].panels.push(...pg.panels);
+    } else {
+      const nm = pg.cands[0] || '', prev = players[players.length - 1];
+      if (prev && nm && prev.name === nm) prev.panels.push(...pg.panels);
+      else players.push({ id: `${fp}:p${pg.pn}`, name: nm, cands: pg.cands, page: pg.pn, panels: pg.panels });
+    }
+    if (!pg.panels.length && !pg.hdr) warns.push(`Sayfa ${pg.pn}: heatmap bulunamadı`);
   }
   prog(null);
   return { name, fp, players, warns, pages: pdf.numPages };
