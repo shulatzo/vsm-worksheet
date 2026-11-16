@@ -783,8 +783,9 @@ async function openPdf(file) {
     $('#empty').hidden = true; renderPlayers();
     persistDeck().catch(() => toast('PDF tarayıcıya kaydedilemedi (depolama dolu olabilir); sayfa yenilenince yeniden açmanız gerekir.'));
     document.title = file.name + ' · Defans Planı';
-    const unkN = Object.values(ap.unk).reduce((a, b) => a + b, 0);
-    toast(`${d.players.length} oyuncu sayfası, ${nPan} heatmap kartı bulundu. ` + (ap.cards ? `${ap.cards} karta koduna göre başlangıç daireleri yerleştirildi` + (unkN ? `; ${unkN} kartın kodu tanınmadı (daireleri elle koyun ya da çubuktan kodu yazın).` : '.') : 'Kod tanınmadığı için daire yerleştirilmedi.') + (d.warns.length ? ' Uyarı: ' + d.warns.join('; ') : ''), 9000);
+    const unkL = Object.keys(ap.unk).filter(k => k !== '?');
+    toast(`PDF açıldı: ${d.players.length} oyuncu, ${nPan} kart. ` + (ap.cards ? `${ap.cards} karta referans daireleri yerleşti.` : 'Referansı olan kod bulunamadı.') +
+      (unkL.length ? ` Referansı olmayan kodlar boş bırakıldı: ${unkL.join(', ')}. (Hata değil; bu kartlara daireleri elle koyup “Referans yap”a basabilirsiniz.)` : '') + (d.warns.length ? ' Uyarı: ' + d.warns.join('; ') : ''), 9000);
     return true;
   } catch (err) { prog(null); console.error(err); toast('PDF açılamadı: ' + (err.message || err), 6000); return false; }
 }
