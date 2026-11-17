@@ -1,7 +1,7 @@
 // Uygulama kabuğunu önbelleğe alır; internet olmadan da açılır.
 // Önce internetteki güncel sürüm denenir. Ağ yoksa ya da 3 saniyede yanıt vermezse önbellekten açılır.
 // Maç verisi burada tutulmaz, o tarayıcının IndexedDB'sindedir.
-const CACHE = 'vsm-worksheet-v35';
+const CACHE = 'vsm-worksheet-v36';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'vsm.js', 'defans.html', 'defans.css', 'defans.js', 'defans-refs.js', 'defans-bg.js', 'defans-pptx.js', 'heatmap.html', 'heatmap.css', 'heatmap.js', 'vendor/jszip.min.js', 'vendor/pdf.min.js', 'vendor/pdf.worker.min.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {

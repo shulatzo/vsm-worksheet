@@ -191,14 +191,17 @@ function drawCourt(cv, pts, tyS, o) {
     });
     if (!any) return;
     const img = tctx.createImageData(GW, GH), d = img.data, op = tyS[t.k].op / 100;
-    /* yoğunluğa göre iç renk: kenar açık ton, orta tipin rengi, çekirdek koyu ve doygun */
-    const lo = t.c.map(v => v + (255 - v) * .55), hi = t.c.map(v => v * .62);
+    /* VolleyStation'daki gibi keskin kenar: dar bir açık hale, hemen tipin kendi rengi, çekirdekte koyulaşır */
+    const mix = (c, w, to) => c.map((v, i) => v + (to[i] - v) * w), W = [255, 255, 255], Bk = [0, 0, 0];
+    const halo = mix(t.c, .45, W), mid = mix(t.c, .1, Bk), core = mix(t.c, .45, Bk);
+    const R = [[0, ...halo, 0], [.05, ...halo, .55], [.13, ...t.c, .95], [.25, ...t.c, 1], [.55, ...mid, 1], [1, ...core, 1]];
     for (let q = 0; q < L.length; q++) {
       const u = Math.min(1, L[q] / den);
-      if (u < .004) { d[q * 4 + 3] = 0; continue; }
-      const a = u < .5 ? u / .5 : (u - .5) / .5, from = u < .5 ? lo : t.c, to = u < .5 ? t.c : hi;
-      d[q * 4] = from[0] + (to[0] - from[0]) * a; d[q * 4 + 1] = from[1] + (to[1] - from[1]) * a; d[q * 4 + 2] = from[2] + (to[2] - from[2]) * a;
-      d[q * 4 + 3] = Math.round(255 * Math.min(1, u * 2.4) * op);
+      if (u < .01) { d[q * 4 + 3] = 0; continue; }
+      let k = 1; while (k < R.length - 1 && u > R[k][0]) k++;
+      const A = R[k - 1], B = R[k], f = Math.min(1, Math.max(0, (u - A[0]) / (B[0] - A[0])));
+      for (let c = 0; c < 3; c++) d[q * 4 + c] = A[c + 1] + (B[c + 1] - A[c + 1]) * f;
+      d[q * 4 + 3] = Math.round(255 * (A[4] + (B[4] - A[4]) * f) * op);
     }
     tctx.putImageData(img, 0, 0);
     g.drawImage(tmp, 0, 0, GW, GH, 0, 0, GW * CELL * K, GH * CELL * K);
