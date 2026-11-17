@@ -396,6 +396,7 @@ function renderPlayers() {
         (has ? `<button class="chip" data-act="cut">✨ Arka planı temizle</button>` : '') +
         (photos[p.id]?.show ? `<button class="chip" data-act="uncut" title="Silinen arka planı geri getir">Arka planı geri getir</button>` : '') +
         (has ? `<label class="sz">Boyut <input type="range" min="20" max="80" step="1" value="${st.mm || 38}" data-act="size" aria-label="Fotoğraf boyutu"></label><button class="chip danger" data-act="rmphoto">Fotoğrafı kaldır</button>` : '') +
+        `<label class="chip" for="phRep${pi}" title="Yanlış heatmap yüklendiyse: bu oyuncunun doğru heatmap PDF’ini seçin, kartları yenisiyle değişir (adı, fotoğrafı ve boyutu kalır)">Heatmap PDF’ini değiştir</label><input type="file" id="phRep${pi}" accept=".pdf,application/pdf" hidden data-act="repl">` +
         `<button class="chip danger" data-act="rmplayer" title="Bu oyuncuyu sayfadan kaldır (Kaldırılanlar’dan geri getirilir)">Oyuncuyu kaldır</button>` +
       `</div>` +
       `<div class="pname"><h2 class="hn" contenteditable="true" spellcheck="false" data-act="name" aria-label="Oyuncu adı" data-ph="Oyuncu adı">${esc(nameOf(p))}</h2>` +
@@ -698,6 +699,7 @@ $('#players').addEventListener('change', async e => {
   const t = e.target, act = t.dataset?.act; if (!act) return;
   const pid = pidOf(t);
   if (act === 'photo') { const f = t.files[0]; t.value = ''; if (f) await setPhoto(pid, f); }
+  else if (act === 'repl') { const f = t.files[0]; t.value = ''; if (f) await mergePdf(f, pid); }
   else if (act === 'cand') { const v = t.value; if (!v) return; mutate(() => { pst(pid).name = v; }, true); }
   else if (act === 'size') { mutate(() => { pst(pid).mm = +t.value; }); }
 });
@@ -827,6 +829,41 @@ async function openPdf(file) {
   } catch (err) { prog(null); console.error(err); toast('PDF açılamadı: ' + (err.message || err), 6000); return false; }
 }
 $('#pdfIn').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await openPdf(f); });
+
+/* Mevcut sayfaya PDF ekler (pid yoksa yeni oyuncular eklenir) ya da tek bir oyuncunun kartlarını yenisiyle değiştirir. */
+const normName = s => String(s || '').toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i').replace(/[^a-z0-9]/g, '');
+async function mergePdf(file, pid) {
+  if (!deck) { await openPdf(file); return; }
+  if (!/\.pdf$/i.test(file.name) && !/pdf$/i.test(file.type)) { toast('Bu bir PDF dosyası değil.'); return; }
+  try {
+    const d = await parsePdf(await file.arrayBuffer(), file.name);
+    const withCards = d.players.filter(p => p.panels.length);
+    if (!withCards.length) { toast('Bu PDF’te heatmap bulunamadı.', 5000); return; }
+    if (pid) {
+      const cur = playerById(pid); let src = null;
+      if (withCards.length === 1) src = withCards[0];
+      else {
+        const n = normName(nameOf(cur)), hit = withCards.filter(p => n && (normName(p.name).includes(n) || n.includes(normName(p.name))));
+        if (hit.length === 1) src = hit[0];
+        else { toast(`Bu PDF’te ${withCards.length} oyuncu var ve adı “${nameOf(cur)}” ile eşleşen bulunamadı. Yalnız bu oyuncunun PDF’ini seçin.`, 8000); return; }
+      }
+      if (!confirm(`“${nameOf(cur) || 'Bu oyuncu'}” için ${cur.panels.length} kart, yeni PDF’teki ${src.panels.length} kartla değiştirilsin mi? Eski kartlardaki daireler silinir. Bu işlem geri alınamaz.`)) return;
+      for (const c of cur.panels) { URL.revokeObjectURL(c.url); delete S.courts[c.key]; delete S.codes?.[c.key]; }
+      cur.panels = src.panels; cur.page = src.page;
+      const st = pst(cur.id); st.hid = {}; st.order = [];
+      autoPlace({ players: [cur] });
+      persist(); await persistDeck(); renderPlayers(); toast(`${nameOf(cur) || 'Oyuncu'}: ${src.panels.length} kart yenilendi.`);
+    } else {
+      const have = new Set(deck.players.map(p => p.id)), add = withCards.filter(p => !have.has(p.id));
+      if (!add.length) { toast('Bu PDF zaten ekli.'); return; }
+      deck.players.push(...add); const ap = autoPlace({ players: add });
+      persist(); await persistDeck(); renderPlayers();
+      toast(`${add.length} oyuncu eklendi (${add.reduce((a, p) => a + p.panels.length, 0)} kart, ${ap.cards} karta referans daireleri yerleşti).`, 6000);
+    }
+  } catch (err) { prog(null); console.error(err); toast('PDF eklenemedi: ' + (err.message || err), 6000); }
+}
+$('#pdfAdd').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await mergePdf(f, null); });
+
 const drop = $('#drop');
 ['dragover', 'dragenter'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
