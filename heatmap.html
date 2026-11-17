@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Isı Haritası · VSM Worksheet</title>
+<meta name="description" content="VolleyStation .vsm dosyalarından oyuncu ve atak kombinasyonuna göre topun düştüğü yer ısı haritası; sert, soft ve tip toplar ayrı renklerle.">
+<meta name="theme-color" content="#0B1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="heatmap.css">
+</head>
+<body>
+
+<header class="bar" id="topbar">
+  <div class="bar-left">
+    <button id="btnSide" class="ghost" aria-label="Filtreleri göster/gizle">☰ Filtreler</button>
+    <div class="brand">Isı <b>Haritası</b></div>
+    <a class="ghost btn-l" href="./">← Rakip analizi</a>
+    <a class="ghost btn-l" href="defans.html">Defans planı</a>
+  </div>
+  <div class="bar-actions">
+    <label class="btn" for="vsmIn">.vsm dosyaları ekle</label>
+    <input id="vsmIn" type="file" accept=".vsm,.json,application/json" multiple hidden>
+    <button id="btnPrint" class="btn">Yazdır / PDF</button>
+  </div>
+</header>
+
+<div class="hlayout">
+  <aside id="side" class="hside" aria-label="Filtreler"></aside>
+  <main id="stage" class="hstage">
+    <div id="empty" class="hempty">
+      <h1>Isı Haritası</h1>
+      <p>VolleyStation’dan aldığınız <b>.vsm</b> dosyalarını ekleyin (birden fazla seçilebilir). Takımınızın ataklarından, oyuncu ve atak kombinasyonuna göre <b>topun düştüğü yer</b> ısı haritası olarak çizilir. Sert (H), soft (P) ve tip (T) toplar ayrı renktedir; tik ve opaklık çubuğuyla açıp kapatırsınız.</p>
+      <label class="btn big" for="vsmIn">.vsm dosyaları ekle</label>
+      <div id="drop" class="drop" tabindex="0">ya da dosyaları buraya bırakın</div>
+      <p class="hint">Düşüş noktaları dosyada VolleyStation’da elle çizdiğiniz atak yönlerinden gelir. Çizmediğiniz ataklarda alt bölge (A–D) ya da bölge merkezi kullanılır, o noktalar “yaklaşık” sayılır.</p>
+    </div>
+    <div id="ctl" class="hctl" hidden></div>
+    <p id="hnote" class="hnote"></p>
+    <div id="sections"></div>
+  </main>
+</div>
+
+<script src="heatmap.js"></script>
+</body>
+</html>

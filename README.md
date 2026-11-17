@@ -56,6 +56,16 @@ VolleyStation'ın heatmap PDF'inden oyuncu sayfaları üretip üzerlerine defans
 - **Yazdır / PDF:** A4 yatay, oyuncu başına bir sayfa; "Sırada" ile kart sayısı 2–5. **PowerPoint (.pptx):** oyuncu başına slayt (kartlar 2 satırı aşarsa devam slaytı); fotoğraf ve kartlar görsel, daireler/oval/notlar düzenlenebilir şekiller.
 - Kapsam: kart tespiti VolleyStation'ın heatmap görünümüne (turuncu saha, mavi çerçeve) dayanır; farklı bir görünümde kart bulunamazsa sayfa uyarı verir.
 
+## Isı Haritası (`heatmap.html`)
+
+VolleyStation'dan dışa aktarılan `.vsm` dosyalarından, bir takımın ataklarının **düştüğü yeri** oyuncu ve atak kombinasyonu başına ısı haritası olarak çizer.
+
+- **Veri:** `.vsm` içindeki her atağın `travelPath` alanı (VolleyStation'da elle çizilen yön) başlangıç ve düşüş koordinatını (cm) verir. Çizilmemiş atakta düşüş alt bölgesi (A–D), o da yoksa bölge merkezi kullanılır; bunlar "yaklaşık" sayılır ve istenirse gizlenir. Dosyayı çizimleri yaptıktan sonra dışa aktarmak gerekir.
+- **Sahalar:** her oyuncu için, o oyuncunun atak yaptığı her kombinasyon ayrı saha. Saha, savunan yarı sahadır (file üstte), 1–9 bölge çizgileri ve 3 m çizgisi görünür. VolleyStation'da seçili kombinasyonlar varsayılan gelir; soldaki listeden değiştirilir.
+- **Top tipi:** her oyuncunun başlığında H (sert, kırmızı), P (soft, yeşil), T (tip, mavi) için tik kutusu ve opaklık çubuğu vardır. Renkler toplamalı karışır (RGB gibi).
+- **Süzgeçler:** maç, oyuncu, kombinasyon, sonuç, atağın başladığı yer (4 / 3 / 2 / arka sıra), set. Yayılım ve doygunluk çubukları ısının yumuşaklığını belirler; "Bölge %" her bölgeye düşen atak oranını yazar.
+- Beş atağın altındaki sahalar "az veri" diye işaretlenir. Dosyalar tarayıcıda saklanır, sunucuya gitmez.
+
 ## Saha görünümü: Bölge kutuları / Heatmap
 
 Ayarlardaki "Saha görünümü" ile oyuncu kartlarındaki ana saha iki görünüm arasında değişir. Kartın geri kalanı (rakip yarı saha, ok yönleri, blok/savunma sembolleri, notlar) aynı kalır; yalnızca topun indiği yerin gösterimi değişir.
