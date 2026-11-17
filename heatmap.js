@@ -43,7 +43,9 @@ const szKey = z => z === 4 ? '4' : z === 3 ? '3' : z === 2 ? '2' : 'B';
 const outKey = e => e === '#' ? 'S' : e === '=' ? 'E' : e === '/' ? 'B' : 'D';
 /* Savunan yarı sahada bölge hücresi [sütun, satır]; satır 0 file yanı. */
 const ZC = { 2: [0, 0], 3: [1, 0], 4: [2, 0], 9: [0, 1], 8: [1, 1], 7: [2, 1], 1: [0, 2], 6: [1, 2], 5: [2, 2] };
-const ZG = [[2, 3, 4], [9, 8, 7], [1, 6, 5]];
+/* VolleyStation gibi savunan takımın kendi gözünden: ön sıra 4 3 2, orta 7 8 9, arka 5 6 1 (soldan sağa). Veri, hücum edenin gözünden olduğu için çizimde x aynalanır. */
+const ZG = [[4, 3, 2], [7, 8, 9], [5, 6, 1]];
+const fx = x => 900 - x;
 const SUBF = { A: [.25, .75], B: [.25, .25], C: [.75, .25], D: [.75, .75] };
 
 /* ——— durum ——— */
@@ -51,7 +53,7 @@ let matches = [];            // [{id,label,date,home,away,pl:{'*':{no:ad},'a':{.
 let S = defaults();
 function defaults() {
   return { team: '', mOff: {}, pSel: null, cb: {}, out: { S: 1, E: 1, B: 1, D: 1 }, sz: { 4: 1, 3: 1, 2: 1, B: 1 }, sets: {},
-    approx: true, pal: 'vs', sigma: 70, sat: 3, cols: 4, merge: false, zonePct: false, ty: {} };
+    approx: true, pal: 'vs', sigma: 45, sat: 30, ver: 2, cols: 4, merge: false, zonePct: false, ty: {} };
 }
 let sideHidden = false;
 
@@ -146,13 +148,16 @@ function drawCourt(cv, pts, tyS, o) {
   g.fillStyle = BLUE; g.fillRect(0, 0, CW, CH);
   g.fillStyle = ORANGE; g.fillRect(cx(0), cy(900), 900 * K, 900 * K);
   const sg = o.sigma, r = Math.ceil(3 * sg / CELL), inv = 1 / (2 * sg * sg);
+  /* VolleyStation gibi yoğunluk, kartın toplam atak sayısına göredir: tam renk için atakların %sat kadarı aynı yerde toplanmalı. */
+  let nT = 0; pts.forEach(p => { if (on(p.h)) nT += tyS[p.h].op / 100; });
+  const den = Math.max(1, nT) * o.sat / 100;
   g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
   if (o.pal !== 'type') {
     /* VolleyStation renk skalası: mor hale → yeşil → sarı → turuncu/kırmızı çekirdek. Seçili tipler tek yoğunlukta toplanır; opaklık çubuğu tipin ağırlığıdır. */
     const L = new Float32Array(GW * GH);
     pts.forEach(p => {
       if (!on(p.h)) return;
-      const wgt = tyS[p.h].op / 100, gx = (p.x - X0) / CELL, gy = (p.y - Y0) / CELL;
+      const wgt = tyS[p.h].op / 100, gx = (fx(p.x) - X0) / CELL, gy = (p.y - Y0) / CELL;
       const i0 = Math.max(0, Math.floor(gx - r)), i1 = Math.min(GW - 1, Math.ceil(gx + r));
       const j0 = Math.max(0, Math.floor(gy - r)), j1 = Math.min(GH - 1, Math.ceil(gy + r));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
@@ -162,7 +167,7 @@ function drawCourt(cv, pts, tyS, o) {
     });
     const img = tctx.createImageData(GW, GH), d = img.data;
     for (let q = 0; q < L.length; q++) {
-      const u = 1 - Math.exp(-L[q] / o.sat);
+      const u = Math.min(1, L[q] / den);
       if (u < .01) { d[q * 4 + 3] = 0; continue; }
       let k = 1; while (k < VSR.length - 1 && u > VSR[k][0]) k++;
       const A = VSR[k - 1], B = VSR[k], f = Math.min(1, Math.max(0, (u - A[0]) / (B[0] - A[0])));
@@ -176,7 +181,7 @@ function drawCourt(cv, pts, tyS, o) {
     const L = new Float32Array(GW * GH); let any = false;
     pts.forEach(p => {
       if (p.h !== t.k) return; any = true;
-      const gx = (p.x - X0) / CELL, gy = (p.y - Y0) / CELL;
+      const gx = (fx(p.x) - X0) / CELL, gy = (p.y - Y0) / CELL;
       const i0 = Math.max(0, Math.floor(gx - r)), i1 = Math.min(GW - 1, Math.ceil(gx + r));
       const j0 = Math.max(0, Math.floor(gy - r)), j1 = Math.min(GH - 1, Math.ceil(gy + r));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
@@ -189,7 +194,7 @@ function drawCourt(cv, pts, tyS, o) {
     /* yoğunluğa göre iç renk: kenar açık ton, orta tipin rengi, çekirdek koyu ve doygun */
     const lo = t.c.map(v => v + (255 - v) * .55), hi = t.c.map(v => v * .62);
     for (let q = 0; q < L.length; q++) {
-      const u = 1 - Math.exp(-L[q] / o.sat);
+      const u = Math.min(1, L[q] / den);
       if (u < .004) { d[q * 4 + 3] = 0; continue; }
       const a = u < .5 ? u / .5 : (u - .5) / .5, from = u < .5 ? lo : t.c, to = u < .5 ? t.c : hi;
       d[q * 4] = from[0] + (to[0] - from[0]) * a; d[q * 4 + 1] = from[1] + (to[1] - from[1]) * a; d[q * 4 + 2] = from[2] + (to[2] - from[2]) * a;
@@ -288,8 +293,8 @@ function renderCtl() {
   const c = $('#ctl'); c.hidden = !matches.length; if (!matches.length) return;
   c.innerHTML = `
     <span class="seg2" role="group" aria-label="Renk skalası">${[['vs', 'VolleyStation renkleri'], ['type', 'Tip renkleri']].map(([k, n]) => `<button data-pal="${k}" aria-pressed="${S.pal === k}">${n}</button>`).join('')}</span>
-    <label title="Her atağın etrafında ısının ne kadar yayılacağı">Yayılım <input type="range" id="fSigma" min="30" max="160" step="5" value="${S.sigma}"><span class="v" id="vSigma">${S.sigma} cm</span></label>
-    <label title="Tam renk için aynı yere kaç atağın üst üste gelmesi gerektiği">Doygunluk <input type="range" id="fSat" min="1" max="10" step="0.5" value="${S.sat}"><span class="v" id="vSat">${S.sat}</span></label>
+    <label title="Her atağın etrafında ısının ne kadar yayılacağı">Yayılım <input type="range" id="fSigma" min="25" max="140" step="5" value="${S.sigma}"><span class="v" id="vSigma">${S.sigma} cm</span></label>
+    <label title="Tam renk (kırmızı) için kartın atağının yüzde kaçının aynı yerde toplanması gerektiği. VolleyStation gibi kartın toplam atak sayısına göre ölçeklenir.">Doygunluk <input type="range" id="fSat" min="10" max="100" step="5" value="${S.sat}"><span class="v" id="vSat">%${S.sat}</span></label>
     <label title="Yan yana saha sayısı">Sırada <select id="fCols">${[2, 3, 4, 5].map(n => `<option${S.cols === n ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
     <label class="chk" style="min-height:0"><input type="checkbox" id="fZonePct"${S.zonePct ? ' checked' : ''}> Bölge %</label>
     <span class="hleg">${S.pal === 'type' ? TYPES.map(t => `<span><i style="background:rgb(${t.c})"></i>${t.k} ${t.n.toLowerCase()}</span>`).join('') : 'Renk: yeşil az, sarı orta, turuncu/kırmızı çok atak · H/P/T tikiyle tip seçilir, çubuk ağırlığıdır'}</span>`;
@@ -411,7 +416,7 @@ $('#ctl').addEventListener('click', e => { const b = e.target.closest('button[da
 $('#ctl').addEventListener('input', e => {
   const t = e.target;
   if (t.id === 'fSigma') { S.sigma = +t.value; $('#vSigma').textContent = S.sigma + ' cm'; redrawSoon(); persist(); }
-  if (t.id === 'fSat') { S.sat = +t.value; $('#vSat').textContent = S.sat; redrawSoon(); persist(); }
+  if (t.id === 'fSat') { S.sat = +t.value; $('#vSat').textContent = '%' + S.sat; redrawSoon(); persist(); }
 });
 $('#ctl').addEventListener('change', e => {
   const t = e.target;
@@ -509,7 +514,7 @@ $('#btnSide').addEventListener('click', () => { sideHidden = !sideHidden; $('#si
 (async function init() {
   try {
     matches = (await idb.get('data')) || [];
-    const st = await idb.get('st'); if (st) S = Object.assign(defaults(), st);
+    const st = await idb.get('st'); if (st) { S = Object.assign(defaults(), st); if (S.ver !== 2) { S.sigma = 45; S.sat = 30; S.ver = 2; } }
   } catch (_) { /* depolama kapalıysa sıfırdan başlar */ }
   renderAll();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
