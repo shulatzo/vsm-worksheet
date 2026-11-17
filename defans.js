@@ -915,6 +915,29 @@ $('#rsAll').addEventListener('click', async () => {
   toast('Sıfırlandı. Yeni bir heatmap PDF’i açabilirsiniz.');
 });
 
+
+/* ——— Isı Haritası sayfasından aktarılan kartlar ——— */
+async function importHeat() {
+  const r = await idb.get('heatDeck'); if (!r?.players?.length) return false;
+  const add = r.players.map(p => ({ id: p.id, name: p.name, cands: [], page: 0, panels: p.panels.map(c => { const blob = unpack(c.b); return { key: c.key, blob, url: URL.createObjectURL(blob), w: c.w, h: c.h, bt: c.bt, code: c.code, court: c.court }; }) }));
+  if (!deck) deck = { name: 'Isı haritası', fp: 'heat', warns: [], pages: 0, players: [] };
+  let fresh = 0, again = 0, cards = 0;
+  for (const p of add) {
+    const i = deck.players.findIndex(x => x.id === p.id);
+    if (i >= 0) { deck.players[i].panels.forEach(c => URL.revokeObjectURL(c.url)); deck.players[i].panels = p.panels; deck.players[i].name = p.name; again++; }
+    else { deck.players.push(p); fresh++; }
+    cards += p.panels.length;
+  }
+  const ap = autoPlace({ players: add });
+  persist(); await persistDeck(); await idb.set('heatDeck', null);
+  $('#empty').hidden = true; renderPlayers();
+  document.title = deck.name + ' · Defans Planı';
+  const unkL = Object.keys(ap.unk).filter(k => k !== '?');
+  toast(`Isı haritasından ${fresh + again} oyuncu, ${cards} kart aktarıldı` + (again ? ` (${again} oyuncu yenilendi, daireleri korundu)` : '') + `. ${ap.cards} karta referans daireleri yerleşti.` +
+    (unkL.length ? ` Referansı olmayan kodlar boş bırakıldı: ${unkL.join(', ')}.` : ''), 9000);
+  return true;
+}
+
 /* ——— açılış ——— */
 (async function init() {
   buildTray();
@@ -924,6 +947,7 @@ $('#rsAll').addEventListener('click', async () => {
   syncControls();
   try { const ph = await idb.get('photos'); if (ph) for (const id in ph) photos[id] = { orig: unpack(ph[id].orig), cut: unpack(ph[id].cut), show: unpack(ph[id].show) }; } catch (_) { }
   try { const r = await idb.get('deck2'); if (r?.players) { deck = loadDeckRecord(r); $('#empty').hidden = true; renderPlayers(); document.title = deck.name + ' · Defans Planı'; } } catch (_) { }
+  try { if (/[?&]from=heat\b/.test(location.search)) { await importHeat(); history.replaceState(null, '', 'defans.html'); } } catch (err) { console.error(err); toast('Isı haritasından aktarılamadı: ' + (err.message || err), 6000); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
-  window.__defans = { get deck() { return deck; }, get S() { return S; }, photos, openPdf, parsePdf, labelSig, sigDist, matchCode, autoPlace };
+  window.__defans = { importHeat, get deck() { return deck; }, get S() { return S; }, photos, openPdf, parsePdf, labelSig, sigDist, matchCode, autoPlace };
 })();

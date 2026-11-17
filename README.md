@@ -62,8 +62,10 @@ VolleyStation'dan dışa aktarılan `.vsm` dosyalarından, bir takımın ataklar
 
 - **Veri:** `.vsm` içindeki her atağın `travelPath` alanı (VolleyStation'da elle çizilen yön) başlangıç ve düşüş koordinatını (cm) verir. Çizilmemiş atakta düşüş alt bölgesi (A–D), o da yoksa bölge merkezi kullanılır; bunlar "yaklaşık" sayılır ve istenirse gizlenir. Dosyayı çizimleri yaptıktan sonra dışa aktarmak gerekir.
 - **Sahalar:** her oyuncu için, o oyuncunun atak yaptığı her kombinasyon ayrı saha. Saha, savunan yarı sahadır (file üstte), 1–9 bölge çizgileri ve 3 m çizgisi görünür. VolleyStation'da seçili kombinasyonlar varsayılan gelir; soldaki listeden değiştirilir.
-- **Top tipi:** her oyuncunun başlığında H (sert, kırmızı), P (soft, yeşil), T (tip, mavi) için tik kutusu ve opaklık çubuğu vardır. Renkler toplamalı karışır (RGB gibi).
+- **Görünüm:** VolleyStation'ın heatmap görünümü (mavi çevre, turuncu saha, beyaz çizgiler, mor hale → yeşil → sarı → turuncu/kırmızı çekirdek) ve başlıktaki Tot / Pts / E / Err / Blo değerleri aynen kullanılır.
+- **Top tipi:** her oyuncunun başlığında H (sert), P (soft), T (tip) için tik kutusu ve opaklık çubuğu vardır. VolleyStation renklerinde seçili tipler tek yoğunlukta toplanır (çubuk tipin ağırlığıdır); tek tipi görmek için diğerlerinin tikini kaldırın. "Tip renkleri" düğmesiyle H yeşil, P kırmızı, T mor ayrı katmanlar olarak da çizilir.
 - **Süzgeçler:** maç, oyuncu, kombinasyon, sonuç, atağın başladığı yer (4 / 3 / 2 / arka sıra), set. Yayılım ve doygunluk çubukları ısının yumuşaklığını belirler; "Bölge %" her bölgeye düşen atak oranını yazar.
+- **Defans planı oluştur:** ekrandaki sahaları (oyuncu ve kombinasyon başına) Defans Planı sayfasına kart olarak aktarır; atak koduna göre referans daireleri otomatik yerleşir. Aynı oyuncu yeniden aktarılırsa kartlar yenilenir, daireler korunur.
 - Beş atağın altındaki sahalar "az veri" diye işaretlenir. Dosyalar tarayıcıda saklanır, sunucuya gitmez.
 
 ## Saha görünümü: Bölge kutuları / Heatmap

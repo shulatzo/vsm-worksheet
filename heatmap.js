@@ -3,7 +3,7 @@
    VolleyStation .vsm dosyalarından (JSON) bir takımın ataklarını okur; oyuncu ve atak kombinasyonu başına, topun düştüğü yeri
    savunan yarı sahada ısı haritası olarak çizer. Düşüş noktası, atağın travelPath'inin son noktasıdır (VolleyStation'da elle çizilen yön).
    Koordinat birimi cm: x 0–900 (soldan sağa), y 900 = file, y 1800 = arka çizgi. Sahaya file üstte olacak şekilde bakılır.
-   Top tipleri (skillType): H sert, P soft, T tip. Her tip ayrı renkte, toplamalı (RGB gibi) karışır. */
+   Top tipleri (skillType): H sert, P soft, T tip. Her tip ayrı renkte, üst üste binince katman olarak karışır. */
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -28,9 +28,9 @@ const idb = {
 /* VolleyStation'da seçili atak kombinasyonları. Üst sıra (C1 C2 CC CF C7) ve diğerleri. */
 const DEF_COMBOS = 'C1 C2 CC CF C7 XX XS XH X3 V3 WW P9 PP P7 WS P5 P1 WH PH P8 C3 XO WO'.split(' ');
 const TYPES = [
-  { k: 'H', n: 'Sert', c: [255, 59, 48] },
-  { k: 'P', n: 'Soft', c: [48, 214, 100] },
-  { k: 'T', n: 'Tip', c: [70, 130, 255] },
+  { k: 'H', n: 'Sert', c: [26, 168, 52] },
+  { k: 'P', n: 'Soft', c: [226, 48, 48] },
+  { k: 'T', n: 'Tip', c: [112, 48, 200] },
 ];
 const OUTS = [
   { k: 'S', n: 'Sayı', f: e => e === '#' },
@@ -51,7 +51,7 @@ let matches = [];            // [{id,label,date,home,away,pl:{'*':{no:ad},'a':{.
 let S = defaults();
 function defaults() {
   return { team: '', mOff: {}, pSel: null, cb: {}, out: { S: 1, E: 1, B: 1, D: 1 }, sz: { 4: 1, 3: 1, 2: 1, B: 1 }, sets: {},
-    approx: true, sigma: 70, sat: 3, cols: 4, merge: false, zonePct: false, ty: {} };
+    approx: true, pal: 'vs', sigma: 70, sat: 3, cols: 4, merge: false, zonePct: false, ty: {} };
 }
 let sideHidden = false;
 
@@ -127,28 +127,55 @@ function filtered(all) {
 }
 
 /* ——— çizim ——— */
-const X0 = -130, X1 = 1030, Y0 = 880, Y1 = 2000, CELL = 12;
+/* VolleyStation görünümü: mavi çevre, turuncu saha, beyaz çizgiler. Yalnızca savunan yarı saha (file üstte). */
+const X0 = -200, X1 = 1100, Y0 = 870, Y1 = 2000, CELL = 12;
 const CW = 480, K = CW / (X1 - X0), CH = Math.round((Y1 - Y0) * K);
 const GW = Math.ceil((X1 - X0) / CELL), GH = Math.ceil((Y1 - Y0) / CELL);
 const tmp = document.createElement('canvas'); tmp.width = GW; tmp.height = GH;
 const tctx = tmp.getContext('2d');
 const cx = x => (x - X0) * K, cy = y => (y - Y0) * K;
+const BLUE = '#3374c4', ORANGE = '#f6c68f';
+/* VolleyStation heatmap skalası (PDF'ten örneklenmiş): [yoğunluk, R, G, B, opaklık] */
+const VSR = [[0, 106, 85, 192, 0], [.05, 106, 85, 192, .55], [.14, 120, 205, 100, .95], [.22, 115, 226, 62, 1], [.40, 177, 239, 37, 1], [.52, 249, 241, 21, 1], [.64, 254, 200, 16, 1], [.76, 254, 150, 11, 1], [1, 254, 105, 8, 1]];
 
 function drawCourt(cv, pts, tyS, o) {
-  cv.width = CW; cv.height = CH;
-  const g = cv.getContext('2d');
+  const sc = o.scale || 1;
+  cv.width = CW * sc; cv.height = CH * sc;
+  const g = cv.getContext('2d'); g.setTransform(sc, 0, 0, sc, 0, 0);
   const on = t => tyS[t].on;
-  /* zemin */
-  g.fillStyle = '#0a1422'; g.fillRect(0, 0, CW, CH);
-  g.fillStyle = '#122338'; g.fillRect(cx(0), cy(900), 900 * K, 900 * K);
-  /* ısı */
-  {
-    const lay = {};
-    TYPES.forEach(t => { lay[t.k] = new Float32Array(GW * GH); });
-    const sg = o.sigma, r = Math.ceil(3 * sg / CELL), inv = 1 / (2 * sg * sg);
+  g.fillStyle = BLUE; g.fillRect(0, 0, CW, CH);
+  g.fillStyle = ORANGE; g.fillRect(cx(0), cy(900), 900 * K, 900 * K);
+  const sg = o.sigma, r = Math.ceil(3 * sg / CELL), inv = 1 / (2 * sg * sg);
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  if (o.pal !== 'type') {
+    /* VolleyStation renk skalası: mor hale → yeşil → sarı → turuncu/kırmızı çekirdek. Seçili tipler tek yoğunlukta toplanır; opaklık çubuğu tipin ağırlığıdır. */
+    const L = new Float32Array(GW * GH);
     pts.forEach(p => {
       if (!on(p.h)) return;
-      const L = lay[p.h]; if (!L) return;
+      const wgt = tyS[p.h].op / 100, gx = (p.x - X0) / CELL, gy = (p.y - Y0) / CELL;
+      const i0 = Math.max(0, Math.floor(gx - r)), i1 = Math.min(GW - 1, Math.ceil(gx + r));
+      const j0 = Math.max(0, Math.floor(gy - r)), j1 = Math.min(GH - 1, Math.ceil(gy + r));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const dx = (i + .5 - gx) * CELL, dy = (j + .5 - gy) * CELL;
+        L[j * GW + i] += wgt * Math.exp(-(dx * dx + dy * dy) * inv);
+      }
+    });
+    const img = tctx.createImageData(GW, GH), d = img.data;
+    for (let q = 0; q < L.length; q++) {
+      const u = 1 - Math.exp(-L[q] / o.sat);
+      if (u < .01) { d[q * 4 + 3] = 0; continue; }
+      let k = 1; while (k < VSR.length - 1 && u > VSR[k][0]) k++;
+      const A = VSR[k - 1], B = VSR[k], f = Math.min(1, Math.max(0, (u - A[0]) / (B[0] - A[0])));
+      for (let c = 0; c < 4; c++) d[q * 4 + c] = A[c + 1] + (B[c + 1] - A[c + 1]) * f;
+      d[q * 4 + 3] = Math.round(255 * (A[4] + (B[4] - A[4]) * f));
+    }
+    tctx.putImageData(img, 0, 0);
+    g.drawImage(tmp, 0, 0, GW, GH, 0, 0, GW * CELL * K, GH * CELL * K);
+  } else TYPES.forEach(t => {
+    if (!on(t.k)) return;
+    const L = new Float32Array(GW * GH); let any = false;
+    pts.forEach(p => {
+      if (p.h !== t.k) return; any = true;
       const gx = (p.x - X0) / CELL, gy = (p.y - Y0) / CELL;
       const i0 = Math.max(0, Math.floor(gx - r)), i1 = Math.min(GW - 1, Math.ceil(gx + r));
       const j0 = Math.max(0, Math.floor(gy - r)), j1 = Math.min(GH - 1, Math.ceil(gy + r));
@@ -157,47 +184,41 @@ function drawCourt(cv, pts, tyS, o) {
         L[j * GW + i] += Math.exp(-(dx * dx + dy * dy) * inv);
       }
     });
-    const img = tctx.createImageData(GW, GH), d = img.data;
-    for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) {
-      const x = X0 + (i + .5) * CELL, y = Y0 + (j + .5) * CELL;
-      const inside = x >= 0 && x <= 900 && y >= 900 && y <= 1800;
-      let R = inside ? 0x12 : 0x0a, G = inside ? 0x23 : 0x14, B = inside ? 0x38 : 0x22;
-      TYPES.forEach(t => {
-        const v = lay[t.k][j * GW + i]; if (!v) return;
-        const a = (1 - Math.exp(-v / o.sat)) * (tyS[t.k].op / 100) * (on(t.k) ? 1 : 0);
-        R += t.c[0] * a; G += t.c[1] * a; B += t.c[2] * a;
-      });
-      const q = (j * GW + i) * 4;
-      d[q] = Math.min(255, R); d[q + 1] = Math.min(255, G); d[q + 2] = Math.min(255, B); d[q + 3] = 255;
+    if (!any) return;
+    const img = tctx.createImageData(GW, GH), d = img.data, op = tyS[t.k].op / 100;
+    /* yoğunluğa göre iç renk: kenar açık ton, orta tipin rengi, çekirdek koyu ve doygun */
+    const lo = t.c.map(v => v + (255 - v) * .55), hi = t.c.map(v => v * .62);
+    for (let q = 0; q < L.length; q++) {
+      const u = 1 - Math.exp(-L[q] / o.sat);
+      if (u < .004) { d[q * 4 + 3] = 0; continue; }
+      const a = u < .5 ? u / .5 : (u - .5) / .5, from = u < .5 ? lo : t.c, to = u < .5 ? t.c : hi;
+      d[q * 4] = from[0] + (to[0] - from[0]) * a; d[q * 4 + 1] = from[1] + (to[1] - from[1]) * a; d[q * 4 + 2] = from[2] + (to[2] - from[2]) * a;
+      d[q * 4 + 3] = Math.round(255 * Math.min(1, u * 2.4) * op);
     }
     tctx.putImageData(img, 0, 0);
-    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
     g.drawImage(tmp, 0, 0, GW, GH, 0, 0, GW * CELL * K, GH * CELL * K);
-  }
-  /* çizgiler */
-  g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.28)'; g.setLineDash([4, 4]);
-  g.beginPath();
-  [300, 600].forEach(x => { g.moveTo(cx(x), cy(900)); g.lineTo(cx(x), cy(1800)); });
-  [1200, 1500].forEach(y => { g.moveTo(cx(0), cy(y)); g.lineTo(cx(900), cy(y)); });
-  g.stroke(); g.setLineDash([]);
-  g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 2;
+  });
+  /* çizgiler (VolleyStation gibi) */
+  g.strokeStyle = '#fff'; g.lineWidth = 2; g.setLineDash([]);
   g.strokeRect(cx(0), cy(900), 900 * K, 900 * K);
-  g.lineWidth = 2.5; g.beginPath(); g.moveTo(cx(0), cy(1200)); g.lineTo(cx(900), cy(1200)); g.stroke();   // 3 m hücum çizgisi
-  g.fillStyle = '#e9eef7'; g.fillRect(cx(-60), cy(900) - 4, (960) * K, 5);                                 // file
-  /* bölge numaraları ve yüzdeler */
-  const cnt = {}; let tot = 0;
-  pts.forEach(p => { if (!on(p.h)) return; tot++; if (p.ez) cnt[p.ez] = (cnt[p.ez] || 0) + 1; });
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  ZG.forEach((row, ri) => row.forEach((z, ci) => {
-    const mx = cx(ci * 300 + 150), my = cy(900 + ri * 300 + 150);
-    if (o.zonePct && tot) {
-      g.fillStyle = 'rgba(255,255,255,.95)'; g.font = '700 21px Bahnschrift, "Segoe UI", sans-serif';
-      g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 4; const s = Math.round(100 * (cnt[z] || 0) / tot) + '%';
-      g.strokeText(s, mx, my); g.fillText(s, mx, my);
-    } else {
-      g.fillStyle = 'rgba(255,255,255,.22)'; g.font = '700 30px Bahnschrift, "Segoe UI", sans-serif'; g.fillText(String(z), mx, my);
-    }
-  }));
+  g.lineWidth = 3; g.beginPath(); g.moveTo(cx(0), cy(900)); g.lineTo(cx(900), cy(900)); g.stroke();          // file
+  g.lineWidth = 2; g.beginPath(); g.moveTo(cx(-60), cy(1200)); g.lineTo(cx(960), cy(1200)); g.stroke();      // 3 m çizgisi (sahanın dışına taşar)
+  g.beginPath(); g.moveTo(cx(450), cy(1800)); g.lineTo(cx(450), cy(1800) - 7); g.stroke();                    // orta işareti
+  g.lineWidth = 1.2; g.setLineDash([2, 2]); g.beginPath();
+  [300, 600].forEach(x => { g.moveTo(cx(x), cy(1200)); g.lineTo(cx(x), cy(1800)); });
+  g.moveTo(cx(0), cy(1500)); g.lineTo(cx(900), cy(1500));
+  g.stroke(); g.setLineDash([]);
+  /* istenirse bölge yüzdeleri */
+  if (o.zonePct) {
+    const cnt = {}; let tot = 0;
+    pts.forEach(p => { if (!on(p.h)) return; tot++; if (p.ez) cnt[p.ez] = (cnt[p.ez] || 0) + 1; });
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 20px Roboto, "Segoe UI", sans-serif';
+    ZG.forEach((row, ri) => row.forEach((z, ci) => {
+      if (!tot) return;
+      const s = Math.round(100 * (cnt[z] || 0) / tot) + '%', mx = cx(ci * 300 + 150), my = cy(900 + ri * 300 + 150);
+      g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 4; g.strokeText(s, mx, my); g.fillStyle = '#1b2a44'; g.fillText(s, mx, my);
+    }));
+  }
 }
 
 /* ——— arayüz ——— */
@@ -266,11 +287,12 @@ function renderSide() {
 function renderCtl() {
   const c = $('#ctl'); c.hidden = !matches.length; if (!matches.length) return;
   c.innerHTML = `
+    <span class="seg2" role="group" aria-label="Renk skalası">${[['vs', 'VolleyStation renkleri'], ['type', 'Tip renkleri']].map(([k, n]) => `<button data-pal="${k}" aria-pressed="${S.pal === k}">${n}</button>`).join('')}</span>
     <label title="Her atağın etrafında ısının ne kadar yayılacağı">Yayılım <input type="range" id="fSigma" min="30" max="160" step="5" value="${S.sigma}"><span class="v" id="vSigma">${S.sigma} cm</span></label>
     <label title="Tam renk için aynı yere kaç atağın üst üste gelmesi gerektiği">Doygunluk <input type="range" id="fSat" min="1" max="10" step="0.5" value="${S.sat}"><span class="v" id="vSat">${S.sat}</span></label>
     <label title="Yan yana saha sayısı">Sırada <select id="fCols">${[2, 3, 4, 5].map(n => `<option${S.cols === n ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
     <label class="chk" style="min-height:0"><input type="checkbox" id="fZonePct"${S.zonePct ? ' checked' : ''}> Bölge %</label>
-    <span class="hleg">${TYPES.map(t => `<span><i style="background:rgb(${t.c})"></i>${t.k} ${t.n.toLowerCase()}</span>`).join('')}</span>`;
+    <span class="hleg">${S.pal === 'type' ? TYPES.map(t => `<span><i style="background:rgb(${t.c})"></i>${t.k} ${t.n.toLowerCase()}</span>`).join('') : 'Renk: yeşil az, sarı orta, turuncu/kırmızı çok atak · H/P/T tikiyle tip seçilir, çubuk ağırlığıdır'}</span>`;
 }
 
 function sectionDefs(list) {
@@ -305,7 +327,7 @@ function renderSections() {
     if (!cl.length) h += `<p class="hnone">Bu süzgeçlerle atak yok.</p>`;
     h += `<div class="hgrid" style="--cols:${S.cols}">`;
     cl.forEach(c => {
-      h += `<figure class="hc" data-c="${esc(c)}"><figcaption><span class="cd">${esc(c)}</span><span class="nn"></span><span class="ty"></span><span class="st"></span></figcaption><canvas aria-label="${esc(c)} ısı haritası"></canvas></figure>`;
+      h += `<figure class="hc" data-c="${esc(c)}"><figcaption><div class="l"><span class="cd">${esc(c)}</span><span class="ty"></span></div><div class="r"></div></figcaption><canvas aria-label="${esc(c)} ısı haritası"></canvas></figure>`;
     });
     h += `</div></section>`;
   });
@@ -324,23 +346,29 @@ function statsFor(pts, ts) {
   const n = on.length; const c = { S: 0, E: 0, B: 0, D: 0 }; on.forEach(p => { c[outKey(p.e)]++; });
   const tc = typeCounts(pts);
   const pc = v => n ? Math.round(100 * v / n) : 0;
-  return { n, tc, txt: `Sayı %${pc(c.S)} · Hata %${pc(c.E)} · Blok %${pc(c.B)}`, ap: on.filter(p => p.ap).length };
+  return { n, tc, pts: pc(c.S), err: pc(c.E), blo: pc(c.B), eff: n ? Math.round(100 * (c.S - c.E - c.B) / n) : 0, ap: on.filter(p => p.ap).length };
 }
 
+/* VolleyStation başlığı: Tot / Pts solda, E / Err / Blo sağda; Err ve Blo 0 ise yazılmaz. */
+function vsStats(st) {
+  const r = (l, v, u) => `<span class="k">${l}</span><span class="v">${v}${u ? `<small>%</small>` : ''}</span>`;
+  const c1 = r('Tot:', st.n) + (st.pts ? r('Pts:', st.pts, 1) : '');
+  const c2 = r('E:', st.eff, 1) + (st.err ? r('Err:', st.err, 1) : '') + (st.blo ? r('Blo:', st.blo, 1) : '');
+  return `<div class="col">${c1}</div><div class="col">${c2}</div>`;
+}
 function drawSection(sec, def) {
   const ts = tyState(def.key);
   const byC = {}; def.pts.forEach(p => { (byC[p.c] = byC[p.c] || []).push(p); });
   sec.querySelectorAll('figure.hc').forEach(fg => {
     const pts = byC[fg.dataset.c] || [];
     const st = statsFor(pts, ts);
-    fg.querySelector('.nn').textContent = `${st.n} atak`;
     fg.querySelector('.ty').innerHTML = TYPES.map(t => `<b style="color:rgb(${t.c})">${t.k}</b> ${st.tc[t.k]}`).join(' · ');
-    fg.querySelector('.st').textContent = st.n ? st.txt : 'Seçili tip yok';
+    fg.querySelector('.r').innerHTML = vsStats(st);
     fg.classList.toggle('few', st.n > 0 && st.n < 5);
     let fw = fg.querySelector('.fw');
-    if (st.n > 0 && st.n < 5) { if (!fw) { fw = document.createElement('span'); fw.className = 'fw'; fg.querySelector('figcaption').appendChild(fw); } fw.textContent = 'Az veri (5’ten az atak)'; }
+    if (st.n > 0 && st.n < 5) { if (!fw) { fw = document.createElement('span'); fw.className = 'fw'; fg.appendChild(fw); } fw.textContent = 'Az veri (5’ten az atak)'; }
     else if (fw) fw.remove();
-    drawCourt(fg.querySelector('canvas'), pts, ts, { sigma: S.sigma, sat: S.sat, zonePct: S.zonePct });
+    drawCourt(fg.querySelector('canvas'), pts, ts, { sigma: S.sigma, sat: S.sat, zonePct: S.zonePct, pal: S.pal });
   });
 }
 function drawAll() {
@@ -379,6 +407,7 @@ $('#side').addEventListener('change', e => {
   if (t.id === 'fMerge') { S.merge = t.checked; return renderAll(); }
   if (t.id === 'fApprox') { S.approx = t.checked; return renderAll(); }
 });
+$('#ctl').addEventListener('click', e => { const b = e.target.closest('button[data-pal]'); if (b) { S.pal = b.dataset.pal; renderCtl(); drawAll(); persist(); } });
 $('#ctl').addEventListener('input', e => {
   const t = e.target;
   if (t.id === 'fSigma') { S.sigma = +t.value; $('#vSigma').textContent = S.sigma + ' cm'; redrawSoon(); persist(); }
@@ -418,6 +447,62 @@ const drop = $('#drop');
 ['dragover', 'dragenter'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
 document.addEventListener('drop', e => { const fs = [...(e.dataTransfer ? e.dataTransfer.files : [])]; if (fs.length) addFiles(fs); });
+
+/* ——— Defans planına aktar ——— */
+/* Her saha, VolleyStation heatmap kartı gibi bir resim olur: üstte kod ve istatistik şeridi, altında mavi çevreli yarı saha.
+   Defans Planı sayfası bu kartların üstüne daireleri koyar (atak koduna göre referans daireleri otomatik gelir). */
+const HH = 54, ES = 2;
+function cardCanvas(code, pts, ts) {
+  const st = statsFor(pts, ts);
+  const cv = document.createElement('canvas'), court = document.createElement('canvas');
+  drawCourt(court, pts, ts, { sigma: S.sigma, sat: S.sat, zonePct: S.zonePct, pal: S.pal, scale: ES });
+  cv.width = CW * ES; cv.height = (HH + CH) * ES;
+  const g = cv.getContext('2d'); g.setTransform(ES, 0, 0, ES, 0, 0);
+  g.fillStyle = '#fff'; g.fillRect(0, 0, CW, HH + CH);
+  g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+  g.fillStyle = '#1f2b47'; g.font = '700 26px Roboto, "Segoe UI", Arial, sans-serif'; g.fillText(code, 10, 40);
+  const rows = (x0, x1, list) => list.forEach(([l, v, u], i) => {
+    const y = 18 + i * 14;
+    g.font = '400 12px Roboto, "Segoe UI", Arial, sans-serif'; g.fillStyle = '#8590a8'; g.textAlign = 'left'; g.fillText(l, x0, y);
+    g.fillStyle = '#26324d'; g.font = '600 12.5px Roboto, "Segoe UI", Arial, sans-serif'; g.textAlign = 'right';
+    if (u) { g.fillText(String(v), x1 - 8, y); g.font = '500 9px Roboto, Arial, sans-serif'; g.fillText('%', x1, y); } else g.fillText(String(v), x1, y);
+  });
+  rows(CW - 215, CW - 122, [['Tot:', st.n, 0]].concat(st.pts ? [['Pts:', st.pts, 1]] : []));
+  rows(CW - 100, CW - 10, [['E:', st.eff, 1]].concat(st.err ? [['Err:', st.err, 1]] : [], st.blo ? [['Blo:', st.blo, 1]] : []));
+  g.textAlign = 'left'; g.font = '600 11px Roboto, "Segoe UI", Arial, sans-serif'; let x = 12;
+  TYPES.forEach((t, i) => { const a = t.k + ' ', b = String(st.tc[t.k]) + (i < 2 ? '   ' : ''); g.fillStyle = `rgb(${t.c})`; g.fillText(a, x, 53 - 2); x += g.measureText(a).width; g.fillStyle = '#6f7b95'; g.fillText(b, x, 53 - 2); x += g.measureText(b).width; });
+  g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(court, 0, HH * ES);
+  const H = HH + CH;
+  return { cv, w: cv.width, h: cv.height, bt: HH / H, court: { x0: cx(0) / CW, y0: (HH + cy(900)) / H, x1: cx(900) / CW, y1: (HH + cy(1800)) / H } };
+}
+const toBlob = (cv, type = 'image/png') => new Promise(r => cv.toBlob(r, type));
+async function sendToDefans() {
+  const host = $('#sections'); const defs = host._defs || [];
+  if (!defs.length) { toast('Önce soldan en az bir oyuncu seçin.'); return; }
+  const btn = $('#btnDefans'); btn.disabled = true; const old = btn.textContent;
+  try {
+    const players = []; let n = 0;
+    for (const d of defs) {
+      const ts = tyState(d.key), byC = {}; d.pts.forEach(p => { (byC[p.c] = byC[p.c] || []).push(p); });
+      const cl = Object.keys(byC).sort((a, b) => byC[b].length - byC[a].length || a.localeCompare(b));
+      const panels = [];
+      for (const c of cl) {
+        btn.textContent = `Hazırlanıyor… ${++n}`; await new Promise(r => setTimeout(r));
+        const cc = cardCanvas(c, byC[c], ts), blob = await toBlob(cc.cv);
+        panels.push({ key: `heat:${d.key}:${c}`, b: { b: await blob.arrayBuffer(), t: blob.type }, w: cc.w, h: cc.h, bt: cc.bt, code: c, court: cc.court });
+        cc.cv.width = cc.cv.height = 1;
+      }
+      if (panels.length) players.push({ id: `heat:${d.key}`, name: d.key === 'ALL' ? 'Seçilen oyuncular' : (d.title || '#' + d.no), panels });
+    }
+    if (!players.length) { toast('Bu süzgeçlerle atak yok.'); return; }
+    const db = await new Promise((res, rej) => { const r = indexedDB.open('vsm-defans', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    await new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put({ players, at: Date.now() }, 'heatDeck'); t.oncomplete = res; t.onerror = () => rej(t.error); });
+    db.close();
+    location.href = 'defans.html?from=heat';
+  } catch (err) { console.error(err); toast('Defans planı hazırlanamadı: ' + (err.message || err), 6000); }
+  finally { btn.disabled = false; btn.textContent = old; }
+}
+$('#btnDefans').addEventListener('click', sendToDefans);
 $('#btnPrint').addEventListener('click', () => window.print());
 $('#btnSide').addEventListener('click', () => { sideHidden = !sideHidden; $('#side').classList.toggle('hidden', sideHidden); });
 
@@ -428,5 +513,5 @@ $('#btnSide').addEventListener('click', () => { sideHidden = !sideHidden; $('#si
   } catch (_) { /* depolama kapalıysa sıfırdan başlar */ }
   renderAll();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-  window.__hm = { get S() { return S; }, get matches() { return matches; }, parseVsm, addFiles, filtered, teamAttacks, renderAll };
+  window.__hm = { cardCanvas, sendToDefans, get S() { return S; }, get matches() { return matches; }, parseVsm, addFiles, filtered, teamAttacks, renderAll };
 })();
